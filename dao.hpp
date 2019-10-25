@@ -71,6 +71,22 @@ namespace xorm {
 			}
 			return conn_->template query<T>(condition);
 		}
+		bool begin() {
+			return conn_->begin();
+		}
+
+		bool commit() {
+			return conn_->commit();
+		}
+
+		bool rollback() {
+			return conn_->rollback();
+		}
+
+		bool execute(std::string const& sql) {
+			return conn_->execute(sql);
+		}
+
 	public:
 		~dao() {
 			simple_pool<DataBaseType>& pool = get_conn_pool();

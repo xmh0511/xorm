@@ -37,7 +37,7 @@ namespace xorm {
 			//bind.buffer_length = 0;
 		}
 		template<typename T>
-		std::enable_if_t<std::is_same<typename std::remove_reference<T>::type, std::string>::value> bind_value(T& t, MYSQL_BIND& bind, bool get = false) {
+		std::enable_if_t<std::is_same_v<typename std::remove_reference<T>::type, std::string>> bind_value(T& t, MYSQL_BIND& bind, bool get = false) {
 			if (get) {
 				t.resize(string_max_size_);
 			}
@@ -47,13 +47,14 @@ namespace xorm {
 			bind.length = 0;
 			bind.buffer_length = t.size();
 		}
+
 		template<typename T>
-		std::enable_if_t<std::is_same<typename std::remove_reference<T>::type, std::string>::value> clear_field(T& t) {
+		std::enable_if_t<std::is_same_v<typename std::remove_reference<T>::type, std::string>> clear_field(T& t) {
 			memset(&t[0], 0, t.size());
 		}
 
 		template<typename T>
-		std::enable_if_t<!std::is_same<typename std::remove_reference<T>::type, std::string>::value> clear_field(T& t) {
+		std::enable_if_t<!std::is_same_v<typename std::remove_reference<T>::type, std::string>> clear_field(T& t) {
 			t.clear();
 		}
 	public:
@@ -111,7 +112,7 @@ namespace xorm {
 		std::enable_if_t<reflector::is_reflect_class<typename std::remove_reference<T>::type>::value, bool> del(std::string const& condition) {
 			auto meta = meta_info_reflect(T{});
 			std::string sql = "DELETE FROM " + meta.get_class_name() + " " + condition;
-			return excute(sql);
+			return execute(sql);
 		}
 
 		template<typename T>
@@ -215,12 +216,12 @@ namespace xorm {
 
 		template<typename T>
 		std::enable_if_t<xorm::is_tuple_type_v<T>, std::pair<bool, std::vector<T>>> query(std::string const& sqlStr) {
-			MYSQL_BIND bind[std::tuple_size<T>::value];
+			MYSQL_BIND bind[std::tuple_size_v<T>];
 			memset(bind, 0, sizeof(bind));
 			MYSQL_STMT* pStmt = nullptr;
 			pStmt = mysql_stmt_init(&mydata);
 			std::vector<T> result;
-			constexpr std::size_t tuple_size = std::tuple_size<T>::value;
+			constexpr std::size_t tuple_size = std::tuple_size_v<T>;
 			if (pStmt != nullptr) {
 				int iRet = mysql_stmt_prepare(pStmt, sqlStr.c_str(), sqlStr.size());
 				if (iRet == 0) {
@@ -248,19 +249,26 @@ namespace xorm {
 			return { false,result };
 		}
 
-		bool excute(std::string const& sql) {
+		bool execute(std::string const& sql) {
 			auto iRet = mysql_query(&mydata, sql.c_str());
 			bool r = iRet != 0 ? false : true;
+			if (r) {
+				auto pRes = mysql_use_result(&mydata);
+				mysql_free_result(pRes);
+			}
+			else {
+				std::cout << mysql_error(&mydata) << std::endl;
+			}
 			return r;
 		}
 		bool begin() {
-			return excute("BEGIN");
+			return execute("BEGIN");
 		}
 		bool commit() {
-			return excute("COMMIT");
+			return execute("COMMIT");
 		}
 		bool rollback() {
-			return excute("ROLLBACK");
+			return execute("ROLLBACK");
 		}
 		void set_max_string_size(std::size_t size) {
 			string_max_size_ = size;
