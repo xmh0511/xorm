@@ -19,7 +19,7 @@ namespace xorm {
 		return config;
 	}
 	template<typename DataBaseType>
-	class dao {
+	class dao_t {
 	private:
 		static simple_pool<DataBaseType>& get_conn_pool() {
 			auto& config = init_database_config();
@@ -27,7 +27,7 @@ namespace xorm {
 			return pool.pool_;
 		}
 	public:
-		dao() {
+		dao_t() {
 			simple_pool<DataBaseType>& pool = get_conn_pool();
 			conn_ = pool.takeout();
 			if (!conn_->ping()) {
@@ -90,7 +90,7 @@ namespace xorm {
 		}
 
 	public:
-		~dao() {
+		~dao_t() {
 			if (start_transaction_) {
 				commit();
 			}

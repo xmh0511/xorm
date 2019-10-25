@@ -21,9 +21,19 @@ int main() {
 	config.user = "root";
 	init_database_config(config);
 
+	dao_t<mysql> dao;
+	test data;
+	data.id = 0;
+	data.a.clear();
+	data.b = "t0 中国好" + std::to_string(5);
+	data.time = "2019-10-25 18:05:01";
+	data.date = "2019-10-09";
+	data.tm.format_timestamp(std::time(nullptr));
+	dao.insert(data);
+
 	auto t0 = std::thread([]() {
 		for (auto i = 0; i < 5; i++) {
-			dao<mysql> t;
+			dao_t<mysql> dao;
 			test data;
 			data.id = 0;
 			data.a = i;
@@ -31,12 +41,12 @@ int main() {
 			data.time = "2019-10-25 18:05:01";
 			data.date = "2019-10-09";
 			data.tm = "18:19:01";
-			t.insert(data);
+			dao.insert(data);
 			std::this_thread::sleep_for(std::chrono::milliseconds(800));
 		}
 	});
 	auto t1 = std::thread([]() {
-		dao<mysql> t;
+		dao_t<mysql> t;
 		for (auto i = 0; i < 5; i++) {
 			test data;
 			data.id = 0;
@@ -50,7 +60,7 @@ int main() {
 		}
 	});
 	auto t2 = std::thread([]() {
-		dao<mysql> t;
+		dao_t<mysql> t;
 		for (auto i = 0; i < 5; i++) {
 			test data;
 			data.id = 0;
@@ -64,7 +74,7 @@ int main() {
 		}
 	});
 	auto t3 = std::thread([]() {
-		dao<mysql> t;
+		dao_t<mysql> t;
 		for (auto i = 0; i < 5; i++) {
 			test data;
 			data.id = 0;

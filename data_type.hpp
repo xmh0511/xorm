@@ -7,6 +7,7 @@
 #endif // __LINUX__
 #include <sstream>
 #include <string>
+#include <ctime>
 namespace xorm {
 	template<typename Type, enum_field_types FieldType>
 	class FundamentionType final {
@@ -86,7 +87,6 @@ public:
 	}
 	TimeDate& operator=(std::string const& date) {
 		decode_time(date);
-		is_null_ = false;
 		return *this;
 	}
 	void clear() {
@@ -111,6 +111,22 @@ public:
 	}
 	std::string value() const {
 		return encode_time();
+	}
+	void format_timestamp(std::time_t timestamp) {
+		char buff[1024];
+		std::string format;
+		if (FieldType == MYSQL_TYPE_DATETIME) {
+			format = "%Y-%m-%d %H:%M:%S";
+		}
+		else if (FieldType == MYSQL_TYPE_DATE) {
+			format = "%Y-%m-%d";
+		}
+		else if (FieldType == MYSQL_TYPE_TIME) {
+			format = "%H:%M:%S";
+		}
+		struct tm* ttime = localtime(&timestamp);
+		strftime(buff, sizeof(buff), format.c_str(), ttime);
+		decode_time(std::string(buff));
 	}
 private:
 	void decode_time(std::string const& date) {
@@ -143,6 +159,7 @@ private:
 			data_.second_part = 0;
 			data_.neg = 0;
 		}
+		is_null_ = false;
 	}
 	std::string encode_time() const {
 		std::stringstream ss;
