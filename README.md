@@ -6,6 +6,10 @@
 1. 使用简单  
 2. head only,方便用于其他项目  
 
+## RoadMap  
+1. 增加sqlite,postgre等数据库支持  
+
+
 ### 实例  
 #### 初始化配置
 ````
@@ -72,7 +76,7 @@ int main(){
   data.id = 1;
   data.a = 1024;
   dao<mysql> t;
-  t.update(data);
-  t.update(data,"where id = 1");
+  bool r = t.update(data);
+  bool r1 = t.update(data,"where id = 1");
 }
 ````
