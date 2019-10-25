@@ -141,7 +141,7 @@ namespace xorm {
 				++index;
 			});
 			ss << ")" << " VALUES(" << value_place << ")";
-			return stmt_excute(ss.str(), bind);
+			return stmt_execute(ss.str(), bind);
 		}
 
 		template<typename T>
@@ -193,7 +193,7 @@ namespace xorm {
 				});
 				ss << " " << condition;
 			}
-			auto rpr = stmt_excute(ss.str(), bind);
+			auto rpr = stmt_execute(ss.str(), bind);
 			if (condition.empty()) {
 				return rpr.first == 2 ? true : false;
 			}
@@ -313,7 +313,7 @@ namespace xorm {
 			return string_max_size_;
 		}
 	private:
-		std::pair<std::uint64_t, std::uint64_t> stmt_excute(std::string const& sqlStr, MYSQL_BIND* bind) {
+		std::pair<std::uint64_t, std::uint64_t> stmt_execute(std::string const& sqlStr, MYSQL_BIND* bind) {
 			MYSQL_STMT* pStmt = nullptr;
 			pStmt = mysql_stmt_init(conn_);
 			if (pStmt != nullptr) {
@@ -326,9 +326,9 @@ namespace xorm {
 						if (iRet == 0) {
 							auto rows = mysql_stmt_affected_rows(pStmt);
 							if (rows != 0) {
-								commit();
+								bool cr = commit();
 								auto pr = query<std::tuple<mysql::Integer>>("SELECT LAST_INSERT_ID();");
-								if (pr.first) {
+								if (cr && pr.first) {
 									auto& id_arr = pr.second;
 									if (!id_arr.empty()) {
 										auto id = std::get<0>((id_arr[0]));
