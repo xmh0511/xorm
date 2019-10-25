@@ -25,14 +25,15 @@ struct test {
 REFLECTION(test, id, a, b, time, date, tm)
 
 int main(){
-      init_database_config({ "127.0.0.1","root","root","xorm",3306,2 }); //全局初始化配置
-   		test data;
-			data.id = 0;
-			data.a = i;
-			data.b = "hello,world";
-			data.time = "2019-10-25 18:05:01";
-			data.date = "2019-10-09";
-			data.tm = "18:19:01";
+
+        init_database_config({ "127.0.0.1","root","root","xorm",3306,2 }); //全局初始化配置
+	test data;
+	data.id = 0;
+	data.a = i;
+	data.b = "hello,world";
+	data.time = "2019-10-25 18:05:01";
+	data.date = "2019-10-09";
+	data.tm = "18:19:01";
 }
 ````
 ####  新增数据
@@ -42,8 +43,8 @@ int main(){
 #include "dao.hpp"
 using namespace xorm;
 int main(){
-  		dao<mysql> t;
-			t.insert(data);
+	dao<mysql> t;
+	t.insert(data);
 }
 ````
 
