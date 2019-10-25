@@ -12,8 +12,14 @@ struct test {
 };
 REFLECTION(test, id, a, b, time, date, tm)
 int main() {
-
-	init_database_config({ "127.0.0.1","root","root","xorm",3306,2 });
+	dataBaseConfig config;
+	config.character_encoding = "utf8";
+	config.conn_number = 2;
+	config.dbname = "xorm";
+	config.host = "127.0.0.1";
+	config.password = "root";
+	config.user = "root";
+	init_database_config(config);
 	auto t0 = std::thread([]() {
 		for (auto i = 0; i < 5; i++) {
 			dao<mysql> t;
