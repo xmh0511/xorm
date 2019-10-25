@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 #include "mysql.hpp"
 #include "dao.hpp"
 using namespace xorm;
@@ -20,13 +20,14 @@ int main() {
 	config.password = "root";
 	config.user = "root";
 	init_database_config(config);
+
 	auto t0 = std::thread([]() {
 		for (auto i = 0; i < 5; i++) {
 			dao<mysql> t;
 			test data;
 			data.id = 0;
 			data.a = i;
-			data.b = "t0"+ std::to_string(i);
+			data.b = "t0 中国好"+ std::to_string(i);
 			data.time = "2019-10-25 18:05:01";
 			data.date = "2019-10-09";
 			data.tm = "18:19:01";
@@ -35,12 +36,12 @@ int main() {
 		}
 	});
 	auto t1 = std::thread([]() {
+		dao<mysql> t;
 		for (auto i = 0; i < 5; i++) {
-			dao<mysql> t;
 			test data;
 			data.id = 0;
 			data.a = i;
-			data.b = "t1" + std::to_string(i);
+			data.b = "t1 中国好" + std::to_string(i);
 			data.time = "2019-10-25 18:05:01";
 			data.date = "2019-10-09";
 			data.tm = "18:19:01";
@@ -49,12 +50,12 @@ int main() {
 		}
 	});
 	auto t2 = std::thread([]() {
+		dao<mysql> t;
 		for (auto i = 0; i < 5; i++) {
-			dao<mysql> t;
 			test data;
 			data.id = 0;
 			data.a = i;
-			data.b = "t2" + std::to_string(i);
+			data.b = "t2 中国好" + std::to_string(i);
 			data.time = "2019-10-25 18:05:01";
 			data.date = "2019-10-09";
 			data.tm = "18:19:01";
@@ -63,12 +64,12 @@ int main() {
 		}
 	});
 	auto t3 = std::thread([]() {
+		dao<mysql> t;
 		for (auto i = 0; i < 5; i++) {
-			dao<mysql> t;
 			test data;
 			data.id = 0;
 			data.a = i;
-			data.b = "t3" + std::to_string(i);
+			data.b = "t3 中国好" + std::to_string(i);
 			data.time = "2019-10-25 18:05:01";
 			data.date = "2019-10-09";
 			data.tm = "18:19:01";
