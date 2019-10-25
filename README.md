@@ -44,7 +44,8 @@ int main(){
 using namespace xorm;
 int main(){
 	dao<mysql> t;
-	t.insert(data);
+	auto pr = t.insert(data);
+	std::cout<<"insert row "<<pr.first<<" insert key "<<pr.second<<std::endl;
 }
 ````
 
@@ -56,7 +57,7 @@ int main(){
 using namespace xorm;
 int main(){
   dao<mysql> t;
-  t.del<test>("where id = 1");
+  bool r = t.del<test>("where id = 1");
 }
 ````
 
