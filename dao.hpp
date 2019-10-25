@@ -87,12 +87,21 @@ namespace xorm {
 			return conn_->execute(sql);
 		}
 
+		void start_transaction() {
+			begin();
+			start_transaction_ = true;
+		}
+
 	public:
 		~dao() {
+			if (start_transaction_) {
+				commit();
+			}
 			simple_pool<DataBaseType>& pool = get_conn_pool();
 			pool.revert(conn_);
 		}
 	private:
 		std::shared_ptr<DataBaseType> conn_;
+		bool start_transaction_ = false;
 	};
 }
