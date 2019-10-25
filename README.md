@@ -80,3 +80,27 @@ int main(){
   bool r1 = t.update(data,"where id = 1");
 }
 ````
+
+####   查询数据
+````
+#include <iostream>
+#include "mysql.hpp"
+#include "dao.hpp"
+using namespace xorm;
+int main(){
+   dao<mysql> t;
+   auto pr = t.query<test>("where id = 1");
+   if(pr.first){
+     std::vector<test>& vec = pr.second;
+     std::cout<< vec.size()<<std::endl;
+     if(!vec.empty()){
+       bool a_isnull =  vec[0].a.is_null();
+     }
+   }
+   
+   auto pr1 = t.query<std::tuple<mysql::Integer,mysql::Integer,std::string,mysql::MysqlDateTime,mysql::MysqlDate,mysql::MysqlTime>>("select * from test");
+   if(pr1.first){
+      std::cout<< pr1.second.size()<<std::endl;
+   }
+}
+````
