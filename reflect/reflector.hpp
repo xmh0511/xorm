@@ -175,6 +175,9 @@ auto meta_info_reflect(ClassName const& t) \
 }
 #define REFLECTION(ClassName,...) GENERATOR_META(get_count(__VA_ARGS__),ClassName,__VA_ARGS__)
 
+template<typename...Args>
+using void_t = void;
+
 template<typename T, typename U = void>
 struct is_reflect_class :std::false_type
 {
@@ -182,7 +185,7 @@ struct is_reflect_class :std::false_type
 };
 
 template<typename T>
-struct is_reflect_class<T, std::void_t<decltype(meta_info_reflect(std::declval<T>()))>> :std::true_type
+struct is_reflect_class<T, void_t<decltype(meta_info_reflect(std::declval<T>()))>> :std::true_type
 {
 
 };
@@ -232,18 +235,18 @@ struct each_1<Size, Size>
 };
 
 template<typename T, typename Function>
-std::enable_if_t<is_reflect_class<std::remove_reference_t<T>>::value> each_object(T&& t, Function&& callback)
+std::enable_if_t<is_reflect_class<typename std::remove_reference<T>::type>::value> each_object(T&& t, Function&& callback)
 {
-	using class_type = std::remove_reference_t<T>;
+	using class_type = typename std::remove_reference<T>::type;
 	using meta_info_type = decltype(meta_info_reflect(std::declval<class_type>()));
 	auto meta = meta_info_type{};
 	each_<0, meta.element_size()>::template each(meta.get_element_names(), meta.get_element_meta_protype(), std::forward<T>(t), std::forward<Function>(callback));
 }
 
 template<typename T, typename Function>
-std::enable_if_t<is_reflect_class<std::remove_reference_t<T>>::value> find_protype(std::string const& name, T&& t, Function&& callback)
+std::enable_if_t<is_reflect_class<typename std::remove_reference<T>::type>::value> find_protype(std::string const& name, T&& t, Function&& callback)
 {
-	using class_type = std::remove_reference_t<T>;
+	using class_type = typename std::remove_reference<T>::type;
 	using meta_info_type = decltype(meta_info_reflect(std::declval<class_type>()));
 	auto meta = meta_info_type{};
 	each_1<0, meta.element_size()>::template each(meta.get_element_names(), meta.get_element_meta_protype(), name, std::forward<T>(t), std::forward<Function>(callback));

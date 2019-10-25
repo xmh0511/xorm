@@ -1,5 +1,9 @@
 #pragma once
+#ifdef  _WIN32
 #include <mysql.h>
+#else
+#include <mysql/mysql.h>
+#endif // __LINUX__
 #include <string>
 #include <sstream>
 #include <utility>
@@ -7,7 +11,7 @@
 #include <memory>
 #include <cstring>
 #include <tuple>
-#include "reflect/reflector.hpp";
+#include "reflect/reflector.hpp"
 #include "data_type.hpp"
 #include "meta_utility.hpp"
 namespace xorm {
@@ -33,7 +37,7 @@ namespace xorm {
 			//bind.buffer_length = 0;
 		}
 		template<typename T>
-		std::enable_if_t<std::is_same_v<typename std::remove_reference<T>::type, std::string>> bind_value(T& t, MYSQL_BIND& bind, bool get = false) {
+		std::enable_if_t<std::is_same<typename std::remove_reference<T>::type, std::string>::value> bind_value(T& t, MYSQL_BIND& bind, bool get = false) {
 			if (get) {
 				t.resize(string_max_size_);
 			}
@@ -43,17 +47,17 @@ namespace xorm {
 			bind.length = 0;
 			bind.buffer_length = t.size();
 		}
-
 		template<typename T>
-		std::enable_if_t<std::is_same_v<typename std::remove_reference<T>::type, std::string>> clear_field(T& t) {
+		std::enable_if_t<std::is_same<typename std::remove_reference<T>::type, std::string>::value> clear_field(T& t) {
 			memset(&t[0], 0, t.size());
 		}
 
 		template<typename T>
-		std::enable_if_t<!std::is_same_v<typename std::remove_reference<T>::type, std::string>> clear_field(T& t) {
+		std::enable_if_t<!std::is_same<typename std::remove_reference<T>::type, std::string>::value> clear_field(T& t) {
 			t.clear();
 		}
 	public:
+		mysql() = default;
 		mysql(std::string const& host, std::string const& user, std::string const& password, std::string const& dbname, unsigned int port = 3306) {
 			connect(host, user, password, dbname, port);
 		}
@@ -211,12 +215,12 @@ namespace xorm {
 
 		template<typename T>
 		std::enable_if_t<xorm::is_tuple_type_v<T>, std::pair<bool, std::vector<T>>> query(std::string const& sqlStr) {
-			MYSQL_BIND bind[std::tuple_size_v<T>];
+			MYSQL_BIND bind[std::tuple_size<T>::value];
 			memset(bind, 0, sizeof(bind));
 			MYSQL_STMT* pStmt = nullptr;
 			pStmt = mysql_stmt_init(&mydata);
 			std::vector<T> result;
-			constexpr std::size_t tuple_size = std::tuple_size_v<T>;
+			constexpr std::size_t tuple_size = std::tuple_size<T>::value;
 			if (pStmt != nullptr) {
 				int iRet = mysql_stmt_prepare(pStmt, sqlStr.c_str(), sqlStr.size());
 				if (iRet == 0) {

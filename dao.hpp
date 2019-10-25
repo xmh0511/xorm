@@ -20,7 +20,6 @@ namespace xorm {
 			});
 		}
 		simple_pool<T> pool_;
-		std::atomic_bool is_init = false;
 	};
 	inline dataBaseConfig& init_database_config(dataBaseConfig const& v = {}) {
 		static dataBaseConfig config{ v };
@@ -56,7 +55,7 @@ namespace xorm {
 			if (!conn_->is_connect()) {
 				return false;
 			}
-			return conn_->del<T>(condition);
+			return conn_->template del<T>(condition);
 		}
 		template<typename T>
 		bool update(T&& v, std::string const& condition = "") {
@@ -70,7 +69,7 @@ namespace xorm {
 			if (!conn_->is_connect()) {
 				return { false,{} };
 			}
-			return conn_->query<T>(condition);
+			return conn_->template query<T>(condition);
 		}
 	public:
 		~dao() {

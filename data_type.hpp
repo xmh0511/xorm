@@ -1,6 +1,10 @@
 #pragma once
 #include <iostream>
+#ifdef  _WIN32
 #include <mysql.h>
+#else
+#include <mysql/mysql.h>
+#endif // __LINUX__
 #include <sstream>
 #include <string>
 namespace xorm {
