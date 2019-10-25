@@ -14,6 +14,7 @@
 #include "reflect/reflector.hpp"
 #include "data_type.hpp"
 #include "meta_utility.hpp"
+#include "dbconfig.hpp"
 namespace xorm {
 	class mysql final {
 	public:
@@ -59,26 +60,61 @@ namespace xorm {
 		}
 	public:
 		mysql() = default;
-		mysql(std::string const& host, std::string const& user, std::string const& password, std::string const& dbname, unsigned int port = 3306) {
-			connect(host, user, password, dbname, port);
+		mysql(dataBaseConfig const& config) {
+			connect(config);
 		}
 	public:
-		void connect(std::string const& host, std::string const& user, std::string const& password, std::string const& dbname, unsigned int port) {
+		void connect(dataBaseConfig const& config) {
 			bool is_success = false;
 			if (0 == mysql_server_init(0, nullptr, nullptr)) {
 				is_success = true;
 			}
-
-			if (nullptr != mysql_init(&mydata)) {
+			conn_ = mysql_init(nullptr);
+			if (nullptr != conn_) {
 				is_success = true;
+				mysql_options(conn_, MYSQL_OPT_RECONNECT, &config.reconnect_number);
+				mysql_options(conn_, MYSQL_SET_CHARSET_NAME, config.character_encoding.data());
 			}
 
-			if (is_success && nullptr != mysql_real_connect(&mydata, host.c_str(), user.c_str(), password.c_str(), dbname.c_str(), port, nullptr, 0)) {
+			if (config.timeout > 0) {
+				if (mysql_options(conn_, MYSQL_OPT_CONNECT_TIMEOUT, &config.timeout) != 0) {
+					is_success = false;
+				}
+				else {
+					is_success = true;
+				}
+			}
+
+			if (is_success && nullptr != mysql_real_connect(conn_, config.host.c_str(), config.user.c_str(), config.password.c_str(), config.dbname.c_str(), config.port, nullptr, 0)) {
 				is_connect_ = true;
 			}
 		}
+		void reconnect(dataBaseConfig const& config) {
+			disconnect();
+			connect(config);
+		}
+
+		void disconnect() {
+			if (conn_ != nullptr) {
+				mysql_close(conn_);
+				conn_ = nullptr;
+				is_connect_ = false;
+			}
+		}
 		bool is_connect() {
-			return is_connect_;
+			return conn_!=nullptr && is_connect_;
+		}
+
+		bool ping() {
+			if (conn_ == nullptr) {
+				is_connect_ = false;
+				return false;
+			}
+			bool r =  mysql_ping(conn_) == 0;
+			if (!r) {
+				is_connect_ = false;
+			}
+			return r;
 		}
 	public:
 		template<typename T>
@@ -184,7 +220,7 @@ namespace xorm {
 			}
 			ss << " FROM " << tablename<<" "<< condition;
 			MYSQL_STMT* pStmt = nullptr;
-			pStmt = mysql_stmt_init(&mydata);
+			pStmt = mysql_stmt_init(conn_);
 			std::vector<T> result;
 			if (pStmt != nullptr) {
 				auto sqlStr = ss.str();
@@ -219,7 +255,7 @@ namespace xorm {
 			MYSQL_BIND bind[std::tuple_size_v<T>];
 			memset(bind, 0, sizeof(bind));
 			MYSQL_STMT* pStmt = nullptr;
-			pStmt = mysql_stmt_init(&mydata);
+			pStmt = mysql_stmt_init(conn_);
 			std::vector<T> result;
 			constexpr std::size_t tuple_size = std::tuple_size_v<T>;
 			if (pStmt != nullptr) {
@@ -250,14 +286,14 @@ namespace xorm {
 		}
 
 		bool execute(std::string const& sql) {
-			auto iRet = mysql_query(&mydata, sql.c_str());
+			auto iRet = mysql_query(conn_, sql.c_str());
 			bool r = iRet != 0 ? false : true;
 			if (r) {
-				auto pRes = mysql_use_result(&mydata);
+				auto pRes = mysql_use_result(conn_);
 				mysql_free_result(pRes);
 			}
 			else {
-				std::cout << mysql_error(&mydata) << std::endl;
+				std::cout << mysql_error(conn_) << std::endl;
 			}
 			return r;
 		}
@@ -279,7 +315,7 @@ namespace xorm {
 	private:
 		std::pair<std::uint64_t, std::uint64_t> stmt_excute(std::string const& sqlStr, MYSQL_BIND* bind) {
 			MYSQL_STMT* pStmt = nullptr;
-			pStmt = mysql_stmt_init(&mydata);
+			pStmt = mysql_stmt_init(conn_);
 			if (pStmt != nullptr) {
 				begin();
 				int iRet = mysql_stmt_prepare(pStmt, sqlStr.data(), sqlStr.size());
@@ -309,7 +345,7 @@ namespace xorm {
 			return { 0 ,0};
 		}
 	private:
-		MYSQL mydata;
+		MYSQL* conn_;
 		bool is_connect_ = false;
 		std::size_t string_max_size_ = 1024 * 1024;
 	};

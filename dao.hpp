@@ -2,21 +2,14 @@
 #include "simple_pool.hpp"
 #include <atomic>
 #include <utility>
+#include "dbconfig.hpp"
 namespace xorm {
-	struct dataBaseConfig {
-		std::string host;
-		std::string user;
-		std::string password;
-		std::string dbname;
-		unsigned int port;
-		std::size_t conn_number;
-	};
 
 	template<typename T>
 	struct Pool {
 		Pool(std::size_t size, dataBaseConfig const& config):pool_(size){
-			pool_.init_pool([config](auto& iter) {
-				iter = std::make_shared<T>(config.host, config.user, config.password, config.dbname, config.port);
+			pool_.init_pool([&config](auto& iter) {
+				iter = std::make_shared<T>(config);
 			});
 		}
 		simple_pool<T> pool_;
@@ -37,6 +30,10 @@ namespace xorm {
 		dao() {
 			simple_pool<DataBaseType>& pool = get_conn_pool();
 			conn_ = pool.takeout();
+			if (!conn_->ping()) {
+				auto& config = init_database_config();
+				conn_->reconnect(config);
+			}
 		}
 	public:
 		/*return type   
