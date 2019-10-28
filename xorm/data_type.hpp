@@ -21,7 +21,7 @@ namespace xorm {
 			return out;
 		}
 	public:
-       using value_type = Type;
+		using value_type = Type;
 	public:
 		FundamentionType() :data_(0), is_null_(true) {
 
@@ -47,7 +47,7 @@ namespace xorm {
 			data_ = 0;
 			is_null_ = true;
 		}
-		Type value() const{
+		Type value() const {
 			return data_;
 		}
 	public:
@@ -66,139 +66,140 @@ namespace xorm {
 	struct is_fundamention_type<FundamentionType<T, FieldType>> :std::true_type {
 
 	};
-}
-template<enum_field_types FieldType>
-class TimeDate {
-	friend std::ostream& operator <<(std::ostream& out, TimeDate const& v) {
-		if (v.is_null()) {
-			out << "NULL";
-		}
-		else {
-			out << v.value();
-		}
-		return out;
-	}
-public:
-    using value_type = MYSQL_TIME;
-public:
-	static const enum_field_types field_type = FieldType;
-public:
-	TimeDate() :is_null_(true) {
 
-	}
-	TimeDate(std::string const& date) :is_null_(false) {
-		decode_time(date);
-	}
-	TimeDate& operator=(std::string const& date) {
-		decode_time(date);
-		return *this;
-	}
-	void clear() {
-		data_.day = 0;
-		data_.hour = 0;
-		data_.minute = 0;
-		data_.month = 0;
-		data_.second = 0;
-		data_.second_part = 0;
-		data_.year = 0;
-		data_.neg = 0;
-		is_null_ = true;
-	}
-	bool is_null() const {
-		return is_null_;
-	}
-	my_bool* null_buffer() {
-		return &is_null_;
-	}
-	char* buffer() {
-		return (char*)(&data_);
-	}
-	std::string value() const {
-		return encode_time();
-	}
-	void format_timestamp(std::time_t timestamp) {
-		char buff[1024];
-		std::string format;
-		if (FieldType == MYSQL_TYPE_DATETIME) {
-			format = "%Y-%m-%d %H:%M:%S";
+	template<enum_field_types FieldType>
+	class TimeDate {
+		friend std::ostream& operator <<(std::ostream& out, TimeDate const& v) {
+			if (v.is_null()) {
+				out << "NULL";
+			}
+			else {
+				out << v.value();
+			}
+			return out;
 		}
-		else if (FieldType == MYSQL_TYPE_DATE) {
-			format = "%Y-%m-%d";
+	public:
+		using value_type = MYSQL_TIME;
+	public:
+		static const enum_field_types field_type = FieldType;
+	public:
+		TimeDate() :is_null_(true) {
+
 		}
-		else if (FieldType == MYSQL_TYPE_TIME) {
-			format = "%H:%M:%S";
+		TimeDate(std::string const& date) :is_null_(false) {
+			decode_time(date);
 		}
-		struct tm* ttime = localtime(&timestamp);
-		strftime(buff, sizeof(buff), format.c_str(), ttime);
-		decode_time(std::string(buff));
-	}
-private:
-	void decode_time(std::string const& date) {
-		char const* cptr = date.data();
-		if (FieldType == MYSQL_TYPE_DATETIME) {
-			data_.year = atoi(cptr);
-			data_.month = atoi(cptr + 5);
-			data_.day = atoi(cptr + 8);
-			data_.hour = atoi(cptr + 11);
-			data_.minute = atoi(cptr + 14);
-			data_.second = atoi(cptr + 17);
-			data_.second_part = 0;
+		TimeDate& operator=(std::string const& date) {
+			decode_time(date);
+			return *this;
 		}
-		else if (FieldType == MYSQL_TYPE_DATE) {
-			data_.year = atoi(cptr);
-			data_.month = atoi(cptr + 5);
-			data_.day = atoi(cptr + 8);
+		void clear() {
+			data_.day = 0;
 			data_.hour = 0;
 			data_.minute = 0;
+			data_.month = 0;
 			data_.second = 0;
 			data_.second_part = 0;
-		}
-		else if (FieldType == MYSQL_TYPE_TIME) {
 			data_.year = 0;
-			data_.month = 0;
-			data_.day = 0;
-			data_.hour = atoi(cptr);
-			data_.minute = atoi(cptr + 3);
-			data_.second = atoi(cptr + 6);
-			data_.second_part = 0;
 			data_.neg = 0;
+			is_null_ = true;
 		}
-		is_null_ = false;
-	}
-	std::string encode_time() const {
-		std::stringstream ss;
-		if (FieldType == MYSQL_TYPE_DATETIME) {
-			ss << data_.year << "-" << fix_number(data_.month) << "-" << fix_number(data_.day) << " " << fix_number(data_.hour) << ":" << fix_number(data_.minute) << ":" << fix_number(data_.second) << "." << data_.second_part;
+		bool is_null() const {
+			return is_null_;
 		}
-		else if (FieldType == MYSQL_TYPE_DATE) {
-			ss << data_.year << "-" << fix_number(data_.month) << "-" << fix_number(data_.day);
+		my_bool* null_buffer() {
+			return &is_null_;
 		}
-		else if (FieldType == MYSQL_TYPE_TIME) {
-			ss << fix_number(data_.hour) << ":" << fix_number(data_.minute) << ":" << fix_number(data_.second) << "." << data_.second_part;
+		char* buffer() {
+			return (char*)(&data_);
 		}
-		return ss.str();
-	}
-	std::string fix_number(int v) const {
-		std::stringstream ss;
-		if (v < 10) {
-			 ss << "0" << v;
+		std::string value() const {
+			return encode_time();
 		}
-		else {
-			ss << v;
+		void format_timestamp(std::time_t timestamp) {
+			char buff[1024];
+			std::string format;
+			if (FieldType == MYSQL_TYPE_DATETIME) {
+				format = "%Y-%m-%d %H:%M:%S";
+			}
+			else if (FieldType == MYSQL_TYPE_DATE) {
+				format = "%Y-%m-%d";
+			}
+			else if (FieldType == MYSQL_TYPE_TIME) {
+				format = "%H:%M:%S";
+			}
+			struct tm* ttime = localtime(&timestamp);
+			strftime(buff, sizeof(buff), format.c_str(), ttime);
+			decode_time(std::string(buff));
 		}
-		return ss.str();
-	}
-private:
-	my_bool is_null_;
-	MYSQL_TIME data_;
-};
+	private:
+		void decode_time(std::string const& date) {
+			char const* cptr = date.data();
+			if (FieldType == MYSQL_TYPE_DATETIME) {
+				data_.year = atoi(cptr);
+				data_.month = atoi(cptr + 5);
+				data_.day = atoi(cptr + 8);
+				data_.hour = atoi(cptr + 11);
+				data_.minute = atoi(cptr + 14);
+				data_.second = atoi(cptr + 17);
+				data_.second_part = 0;
+			}
+			else if (FieldType == MYSQL_TYPE_DATE) {
+				data_.year = atoi(cptr);
+				data_.month = atoi(cptr + 5);
+				data_.day = atoi(cptr + 8);
+				data_.hour = 0;
+				data_.minute = 0;
+				data_.second = 0;
+				data_.second_part = 0;
+			}
+			else if (FieldType == MYSQL_TYPE_TIME) {
+				data_.year = 0;
+				data_.month = 0;
+				data_.day = 0;
+				data_.hour = atoi(cptr);
+				data_.minute = atoi(cptr + 3);
+				data_.second = atoi(cptr + 6);
+				data_.second_part = 0;
+				data_.neg = 0;
+			}
+			is_null_ = false;
+		}
+		std::string encode_time() const {
+			std::stringstream ss;
+			if (FieldType == MYSQL_TYPE_DATETIME) {
+				ss << data_.year << "-" << fix_number(data_.month) << "-" << fix_number(data_.day) << " " << fix_number(data_.hour) << ":" << fix_number(data_.minute) << ":" << fix_number(data_.second) << "." << data_.second_part;
+			}
+			else if (FieldType == MYSQL_TYPE_DATE) {
+				ss << data_.year << "-" << fix_number(data_.month) << "-" << fix_number(data_.day);
+			}
+			else if (FieldType == MYSQL_TYPE_TIME) {
+				ss << fix_number(data_.hour) << ":" << fix_number(data_.minute) << ":" << fix_number(data_.second) << "." << data_.second_part;
+			}
+			return ss.str();
+		}
+		std::string fix_number(int v) const {
+			std::stringstream ss;
+			if (v < 10) {
+				ss << "0" << v;
+			}
+			else {
+				ss << v;
+			}
+			return ss.str();
+		}
+	private:
+		my_bool is_null_;
+		MYSQL_TIME data_;
+	};
 
-template<typename T>
-struct is_date_type :std::false_type {
+	template<typename T>
+	struct is_date_type :std::false_type {
 
-};
+	};
 
-template<enum_field_types FieldType>
-struct is_date_type<TimeDate<FieldType>> :std::true_type {
+	template<enum_field_types FieldType>
+	struct is_date_type<TimeDate<FieldType>> :std::true_type {
 
-};
+	};
+}
