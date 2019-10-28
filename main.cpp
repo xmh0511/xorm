@@ -8,8 +8,9 @@ struct test {
 	mysql::MysqlDateTime time;
 	mysql::MysqlDate date;
 	mysql::MysqlTime tm;
+	mysql::Double money;
 };
-REFLECTION(test, id, a, b, time, date, tm)
+REFLECTION(test, id, a, b, time, date, tm, money)
 int main() {
 	dataBaseConfig config;
 	config.character_encoding = "utf8";
