@@ -21,6 +21,8 @@ namespace xorm {
 			return out;
 		}
 	public:
+       using value_type = Type;
+	public:
 		FundamentionType() :data_(0), is_null_(true) {
 
 		}
@@ -76,6 +78,8 @@ class TimeDate {
 		}
 		return out;
 	}
+public:
+    using value_type = MYSQL_TIME;
 public:
 	static const enum_field_types field_type = FieldType;
 public:
