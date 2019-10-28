@@ -16,6 +16,8 @@ set(SOURCE_FILES main.cpp)
 
 add_executable(${project_name} ${SOURCE_FILES})
 
+include_directories(${CMAKE_SOURCE_DIR}/xorm)
+
 if (MSVC)
 target_link_libraries(${project_name} libmysql)
 else()

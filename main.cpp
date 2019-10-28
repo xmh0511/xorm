@@ -1,6 +1,5 @@
 ﻿#include <iostream>
-#include "mysql.hpp"
-#include "dao.hpp"
+#include "xorm.hpp"
 using namespace xorm;
 struct test {
 	mysql::Integer id;
