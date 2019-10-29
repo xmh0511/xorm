@@ -46,7 +46,7 @@ namespace xorm {
 			bind.buffer = &(t[0]);
 			bind.is_null = 0;
 			bind.length = 0;
-			bind.buffer_length = t.size();
+			bind.buffer_length = (unsigned long)t.size();
 		}
 
 		template<typename T,typename U>
@@ -225,7 +225,7 @@ namespace xorm {
 			std::vector<T> result;
 			if (pStmt != nullptr) {
 				auto sqlStr = ss.str();
-				int iRet = mysql_stmt_prepare(pStmt, sqlStr.c_str(), sqlStr.size());
+				int iRet = mysql_stmt_prepare(pStmt, sqlStr.c_str(), (unsigned long)sqlStr.size());
 				if (iRet == 0) {
 					T tmp{};
 					int index = 0;
@@ -261,7 +261,7 @@ namespace xorm {
 			pStmt = mysql_stmt_init(conn_);
 			std::vector<T> result;
 			if (pStmt != nullptr) {
-				int iRet = mysql_stmt_prepare(pStmt, sqlStr.c_str(), sqlStr.size());
+				int iRet = mysql_stmt_prepare(pStmt, sqlStr.c_str(), (unsigned long)sqlStr.size());
 				if (iRet == 0) {
 					T tmp{};
 					int index = 0;
@@ -321,7 +321,7 @@ namespace xorm {
 			pStmt = mysql_stmt_init(conn_);
 			if (pStmt != nullptr) {
 				begin();
-				int iRet = mysql_stmt_prepare(pStmt, sqlStr.data(), sqlStr.size());
+				int iRet = mysql_stmt_prepare(pStmt, sqlStr.data(), (unsigned long)sqlStr.size());
 				if (iRet == 0) {
 					iRet = mysql_stmt_bind_param(pStmt, bind);
 					if (iRet == 0) {
