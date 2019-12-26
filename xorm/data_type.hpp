@@ -168,13 +168,13 @@ namespace xorm {
 		std::string encode_time() const {
 			std::stringstream ss;
 			if (FieldType == MYSQL_TYPE_DATETIME) {
-				ss << data_.year << "-" << fix_number(data_.month) << "-" << fix_number(data_.day) << " " << fix_number(data_.hour) << ":" << fix_number(data_.minute) << ":" << fix_number(data_.second) << "." << data_.second_part;
+				ss << data_.year << "-" << fix_number(data_.month) << "-" << fix_number(data_.day) << " " << fix_number(data_.hour) << ":" << fix_number(data_.minute) << ":" << fix_number(data_.second) ; //<< "." << data_.second_part
 			}
 			else if (FieldType == MYSQL_TYPE_DATE) {
 				ss << data_.year << "-" << fix_number(data_.month) << "-" << fix_number(data_.day);
 			}
 			else if (FieldType == MYSQL_TYPE_TIME) {
-				ss << fix_number(data_.hour) << ":" << fix_number(data_.minute) << ":" << fix_number(data_.second) << "." << data_.second_part;
+				ss << fix_number(data_.hour) << ":" << fix_number(data_.minute) << ":" << fix_number(data_.second) ; //<< "." << data_.second_part
 			}
 			return ss.str();
 		}
