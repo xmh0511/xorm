@@ -73,7 +73,9 @@ namespace xorm {
 		}
 
 		bool commit() {
-			return conn_->commit();
+			bool b =  conn_->commit();
+			start_transaction_ = !b;
+			return b;
 		}
 
 		bool rollback() {
@@ -87,6 +89,10 @@ namespace xorm {
 		void start_transaction() {
 			begin();
 			start_transaction_ = true;
+		}
+
+		bool is_open() {
+			return conn_->is_connect();
 		}
 
 	public:
