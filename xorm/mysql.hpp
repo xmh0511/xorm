@@ -248,6 +248,9 @@ namespace xorm {
 						}
 					}
 				}
+				else {
+					std::cout << mysql_error(conn_) << std::endl;
+				}
 			}
 			return { false,result };
 		}
@@ -283,6 +286,9 @@ namespace xorm {
 							return { true,result };
 						}
 					}
+				}
+				else {
+					std::cout << mysql_error(conn_) << std::endl;
 				}
 			}
 			return { false,result };
