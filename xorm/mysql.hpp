@@ -136,6 +136,8 @@ namespace xorm {
 		template<typename T0>
 		friend struct auto_params_lambda0;
 		template<typename T0>
+		friend struct auto_params_lambda1;
+		template<typename T0>
 		friend struct auto_params_lambda2;
 		template<typename Object, typename T0>
 		friend struct auto_params_lambda3;
@@ -312,8 +314,8 @@ namespace xorm {
 				ss << "UPDATE " << tablename << " SET ";
 				auto size = meta.element_size();
 				int index = 0;
-				auto_params_lambda1<mysql> lambda{ ss ,index ,size ,bind ,this };
-				reflector::each_object(std::forward<T>(v), lambda);
+				auto_params_lambda1<mysql> lambda1{ ss ,index ,size ,bind ,this };
+				reflector::each_object(std::forward<T>(v), lambda1);
 				//reflector::each_object(std::forward<T>(v), [&ss, &index, size, &bind, this](auto&& obj, auto name, auto field) {
 				//	this->bind_value((obj.*field), bind[index]);
 				//	if (index < (size - 1)) {

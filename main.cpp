@@ -88,6 +88,9 @@ int main() {
 		dao_query.start_transaction();
 		auto r = dao_query.query<test>(" for update");
 		std::cout << r.first << "  " << r.second.size() << std::endl;
+		//auto& it = r.second[0];
+		//it.money = 10243.21;
+		//dao_query.update(it);
 	}
 	t0.join();
 	t1.join();
