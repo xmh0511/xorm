@@ -153,25 +153,25 @@ namespace reflector
 
 #define GENERATOR_META(N,ClassName,...) \
 static std::array<char const*,N> ClassName##_element_name_arr = { expand_marco(concat_a_b(For_,N)(element_name_macro,ClassName,__VA_ARGS__)) }; \
-auto meta_info_reflect(ClassName const& t) \
-{ \
-	struct meta_info \
-	{   \
-        auto get_element_names()-> std::array<char const*,N> \
-		 { \
-             return  ClassName##_element_name_arr; \
-		 } \
-        auto get_element_meta_protype() \
+struct ClassName_##_meta_info \
+{   \
+    auto get_element_names()-> std::array<char const*,N> \
 		{ \
-           return std::make_tuple(expand_marco(concat_a_b(For_,N)(address_macro,ClassName,__VA_ARGS__))); \
+            return  ClassName##_element_name_arr; \
 		} \
-        std::string get_class_name() \
-        { \
-            return #ClassName ; \
-        } \
-        constexpr std::size_t element_size() { return N; } \
-    }; \
-    return meta_info{}; \
+    auto get_element_meta_protype()->decltype(std::make_tuple(expand_marco(concat_a_b(For_,N)(address_macro,ClassName,__VA_ARGS__)))) \
+	{ \
+        return std::make_tuple(expand_marco(concat_a_b(For_,N)(address_macro,ClassName,__VA_ARGS__))); \
+	} \
+    std::string get_class_name() \
+    { \
+        return #ClassName ; \
+    } \
+    constexpr std::size_t element_size() { return N; } \
+}; \
+auto meta_info_reflect(ClassName const& t)->ClassName_##_meta_info \
+{ \
+    return ClassName_##_meta_info{}; \
 }
 #define REFLECTION(ClassName,...) GENERATOR_META(get_count(__VA_ARGS__),ClassName,__VA_ARGS__)
 
@@ -235,7 +235,7 @@ struct each_1<Size, Size>
 };
 
 template<typename T, typename Function>
-std::enable_if_t<is_reflect_class<typename std::remove_reference<T>::type>::value> each_object(T&& t, Function&& callback)
+typename std::enable_if<is_reflect_class<typename std::remove_reference<T>::type>::value>::type each_object(T&& t, Function&& callback)
 {
 	using class_type = typename std::remove_reference<T>::type;
 	using meta_info_type = decltype(meta_info_reflect(std::declval<class_type>()));
@@ -244,7 +244,7 @@ std::enable_if_t<is_reflect_class<typename std::remove_reference<T>::type>::valu
 }
 
 template<typename T, typename Function>
-std::enable_if_t<is_reflect_class<typename std::remove_reference<T>::type>::value> find_protype(std::string const& name, T&& t, Function&& callback)
+typename std::enable_if<is_reflect_class<typename std::remove_reference<T>::type>::value>::type find_protype(std::string const& name, T&& t, Function&& callback)
 {
 	using class_type = typename std::remove_reference<T>::type;
 	using meta_info_type = decltype(meta_info_reflect(std::declval<class_type>()));

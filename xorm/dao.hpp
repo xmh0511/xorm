@@ -8,7 +8,7 @@ namespace xorm {
 	template<typename T>
 	struct Pool {
 		Pool(std::size_t size, dataBaseConfig const& config):pool_(size){
-			pool_.init_pool([&config](auto& iter) {
+			pool_.init_pool([&config](std::shared_ptr<T>& iter) {
 				iter = std::make_shared<T>(config);
 			});
 		}

@@ -9,8 +9,8 @@ namespace xorm {
 	struct is_tuple_type<std::tuple<Args...>> :std::true_type {
 
 	};
-	template<typename T>
-	constexpr bool is_tuple_type_v = is_tuple_type<T>::value;
+	//template<typename T>
+	//constexpr bool is_tuple_type_v = is_tuple_type<T>::value;
 
 	template<std::size_t N,std::size_t Max>
 	struct each_tuple {

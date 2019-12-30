@@ -33,6 +33,7 @@ int main() {
 			data.time = "2019-10-25 18:05:01";
 			data.date = "2019-10-09";
 			data.tm.format_timestamp(std::time(nullptr));
+			data.money = 12.03;
 			dao.insert(data);
 			std::this_thread::sleep_for(std::chrono::milliseconds(800));
 		}
@@ -86,6 +87,7 @@ int main() {
 		dao_t<mysql> dao_query;
 		dao_query.start_transaction();
 		auto r = dao_query.query<test>(" for update");
+		std::cout << r.first << "  " << r.second.size() << std::endl;
 	}
 	t0.join();
 	t1.join();

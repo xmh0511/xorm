@@ -16,133 +16,7 @@
 #include "meta_utility.hpp"
 #include "dbconfig.hpp"
 namespace xorm {
-	template<typename T0>
-	struct auto_params_lambda0 {
-		auto_params_lambda0(std::stringstream& ss_, int& index_, std::size_t size_, std::string& value_place_, MYSQL_BIND* bind_, T0* that):ss(ss_), index(index_), size(size_), value_place(value_place_), bind(bind_), this_(that){
-
-		}
-		template<typename T,typename U,typename Y>
-		void operator()(T&& obj,U&& name,Y&& field) {
-			this_->bind_value((obj.*field), bind[index]);
-			if (index < (size - 1)) {
-				ss << name << ",";
-				value_place.append("?,");
-			}
-			else if (index == (size - 1)) {
-				ss << name;
-				value_place.append("?");
-			}
-			++index;
-		}
-		std::stringstream& ss;
-		int& index;
-		std::size_t size;
-		std::string& value_place;
-		MYSQL_BIND* bind;
-		T0* this_;
-	};
-	/*
-	template<typename T0>
-	struct auto_params_lambda0 {
-		auto_params_lambda0(std::stringstream& ss_, int& index_, std::size_t size_, std::string& value_place_, MYSQL_BIND* bind_, T0* that):ss(ss_), index(index_), size(size_), value_place(value_place_), bind(bind_), this_(that){
-
-		}
-		template<typename T, typename U, typename Y>
-		void operator()(T&& obj, U&& name, Y&& field) {
-
-		}
-		std::stringstream& ss;
-		int& index;
-		std::size_t size;
-		std::string& value_place;
-		MYSQL_BIND* bind;
-		T0* this_;
-	};*/
-	template<typename T0>
-	struct auto_params_lambda1 {
-		auto_params_lambda1(std::stringstream& ss_, int& index_, std::size_t size_,  MYSQL_BIND* bind_, T0* that) :ss(ss_), index(index_), size(size_), bind(bind_), this_(that) {
-
-		}
-		template<typename T, typename U, typename Y>
-		void operator()(T&& obj, U&& name, Y&& field) {
-			this_->bind_value((obj.*field), bind[index]);
-			if (index < (size - 1)) {
-				ss << name << "=?" << ",";
-			}
-			else if (index == (size - 1)) {
-				ss << name << "=?";
-			}
-			++index;
-		}
-		std::stringstream& ss;
-		int& index;
-		std::size_t size;
-		MYSQL_BIND* bind;
-		T0* this_;
-	};
-	template<typename T0>
-	struct auto_params_lambda2 {
-		auto_params_lambda2(int& index_,  MYSQL_BIND* bind_, T0* that) :index(index_), bind(bind_), this_(that) {
-
-		}
-		template<typename T, typename U, typename Y>
-		void operator()(T&& obj, U&& name, Y&& field) {
-			this_->bind_value((obj.*field), bind[index], true);
-			++index;
-		}
-		int& index;
-		MYSQL_BIND* bind;
-		T0* this_;
-	};
-	template<typename Object,typename T0>
-	struct auto_params_lambda3 {
-		auto_params_lambda3(T0* that, Object& copy_v_) : this_(that), copy_v(copy_v_){
-
-		}
-		template<typename T, typename U, typename Y>
-		void operator()(T&& obj, U&& name, Y&& field) {
-			this_->clear_field((obj.*field), (copy_v.*field));
-		}
-		T0* this_;
-		Object& copy_v;
-	};
-	template<typename T0>
-	struct auto_params_lambda4 {
-		auto_params_lambda4(int& index_,  MYSQL_BIND* bind_, T0* that) :index(index_),bind(bind_), this_(that) {
-
-		}
-		template<typename T>
-		void operator()(T& v) {
-			this_->bind_value(v, bind[index], true);
-			++index;
-		}
-		int& index;
-		MYSQL_BIND* bind;
-		T0* this_;
-	};
-	template<typename T0>
-	struct auto_params_lambda5 {
-		auto_params_lambda5(MYSQL_BIND* bind_, T0* that) : bind(bind_), this_(that) {
-
-		}
-		template<typename T,typename U>
-		void operator()(T& v,U& u) {
-			this_->clear_field(v, u);
-		}
-		MYSQL_BIND* bind;
-		T0* this_;
-	};
 	class mysql final {
-		template<typename T0>
-		friend struct auto_params_lambda0;
-		template<typename T0>
-		friend struct auto_params_lambda2;
-		template<typename Object, typename T0>
-		friend struct auto_params_lambda3;
-		template<typename T0>
-		friend struct auto_params_lambda4;
-		template<typename T0>
-		friend struct auto_params_lambda5;
 	public:
 		using Integer = FundamentionType<int, MYSQL_TYPE_LONG>;
 		using Float = FundamentionType<float, MYSQL_TYPE_FLOAT>;
@@ -255,20 +129,18 @@ namespace xorm {
 			std::string value_place = "";
 			MYSQL_BIND bind[meta.element_size()];
 			memset(bind, 0, sizeof(bind));
-			auto_params_lambda0<mysql> lambda{ ss ,index ,size ,value_place ,bind,this };
-			reflector::each_object(std::forward<T>(t), lambda);
-			//reflector::each_object(std::forward<T>(t), [&ss, &index, size, &value_place, &bind, this](auto&& obj, auto name, auto field) {
-			//	this->bind_value((obj.*field), bind[index]);
-			//	if (index < (size - 1)) {
-			//		ss << name << ",";
-			//		value_place.append("?,");
-			//	}
-			//	else if (index == (size - 1)) {
-			//		ss << name;
-			//		value_place.append("?");
-			//	}
-			//	++index;
-			//});
+			reflector::each_object(std::forward<T>(t), [&ss, &index, size, &value_place, &bind, this](auto&& obj, auto name, auto field) {
+				this->bind_value((obj.*field), bind[index]);
+				if (index < (size - 1)) {
+					ss << name << ",";
+					value_place.append("?,");
+				}
+				else if (index == (size - 1)) {
+					ss << name;
+					value_place.append("?");
+				}
+				++index;
+			});
 			ss << ")" << " VALUES(" << value_place << ")";
 			return stmt_execute(ss.str(), bind);
 		}
@@ -292,38 +164,34 @@ namespace xorm {
 				auto size = meta.element_size();
 				int index = 0;
 				std::string value_place = "";
-				auto_params_lambda0<mysql> lambda{ ss ,index ,size ,value_place ,bind,this };
-				reflector::each_object(std::forward<T>(v), lambda);
-				//reflector::each_object(std::forward<T>(v), [&ss, &index, size, &value_place, &bind, this](auto&& obj, auto name, auto field) {
-				//	this->bind_value((obj.*field), bind[index]);
-				//	if (index < (size - 1)) {
-				//		ss << name << ",";
-				//		value_place.append("?,");
-				//	}
-				//	else if (index == (size - 1)) {
-				//		ss << name;
-				//		value_place.append("?");
-				//	}
-				//	++index;
-				//});
+				reflector::each_object(std::forward<T>(v), [&ss, &index, size, &value_place, &bind, this](auto&& obj, auto name, auto field) {
+					this->bind_value((obj.*field), bind[index]);
+					if (index < (size - 1)) {
+						ss << name << ",";
+						value_place.append("?,");
+					}
+					else if (index == (size - 1)) {
+						ss << name;
+						value_place.append("?");
+					}
+					++index;
+				});
 				ss << ")" << " VALUES(" << value_place << ")";
 			}
 			else {
 				ss << "UPDATE " << tablename << " SET ";
 				auto size = meta.element_size();
 				int index = 0;
-				auto_params_lambda1<mysql> lambda{ ss ,index ,size ,bind ,this };
-				reflector::each_object(std::forward<T>(v), lambda);
-				//reflector::each_object(std::forward<T>(v), [&ss, &index, size, &bind, this](auto&& obj, auto name, auto field) {
-				//	this->bind_value((obj.*field), bind[index]);
-				//	if (index < (size - 1)) {
-				//		ss << name << "=?" << ",";
-				//	}
-				//	else if (index == (size - 1)) {
-				//		ss << name << "=?";
-				//	}
-				//	++index;
-				//});
+				reflector::each_object(std::forward<T>(v), [&ss, &index, size, &bind, this](auto&& obj, auto name, auto field) {
+					this->bind_value((obj.*field), bind[index]);
+					if (index < (size - 1)) {
+						ss << name << "=?" << ",";
+					}
+					else if (index == (size - 1)) {
+						ss << name << "=?";
+					}
+					++index;
+				});
 				ss << " " << condition;
 			}
 			auto rpr = stmt_execute(ss.str(), bind);
@@ -361,23 +229,19 @@ namespace xorm {
 				if (iRet == 0) {
 					T tmp{};
 					int index = 0;
-					auto_params_lambda2<mysql> lambda{ index ,bind ,this };
-					reflector::each_object(tmp, lambda);
-					//reflector::each_object(tmp, [&index, &bind, this](auto&& obj, auto name, auto field) {
-					//	this->bind_value((obj.*field), bind[index], true);
-					//	++index;
-					//});
+					reflector::each_object(tmp, [&index, &bind, this](auto&& obj, auto name, auto field) {
+						this->bind_value((obj.*field), bind[index], true);
+						++index;
+					});
 					bool r = mysql_stmt_bind_result(pStmt, bind);
 					if (!r) {
 						r = mysql_stmt_execute(pStmt);
 						if (!r) {
 							while (mysql_stmt_fetch(pStmt) == 0) {
 								T copy_v = tmp;
-								auto_params_lambda3<T, mysql> lambda3{ this,copy_v };
-								reflector::each_object(tmp, lambda3);
-								//reflector::each_object(tmp, [this,&copy_v](auto&& obj, auto name, auto field) {
-								//	this->clear_field((obj.*field),(copy_v.*field));
-								//});
+								reflector::each_object(tmp, [this,&copy_v](auto&& obj, auto name, auto field) {
+									this->clear_field((obj.*field),(copy_v.*field));
+								});
 								result.push_back(std::move(copy_v));
 							}
 							return { true,result };
@@ -392,7 +256,7 @@ namespace xorm {
 		}
 
 		template<typename T>
-		typename std::enable_if<xorm::is_tuple_type<T>::value, std::pair<bool, std::vector<T>>>::type query(std::string const& sqlStr) {
+		typename std::enable_if<xorm::is_tuple_type_v<T>, std::pair<bool, std::vector<T>>>::type query(std::string const& sqlStr) {
 			constexpr std::size_t tuple_size = std::tuple_size<T>::value;
 			MYSQL_BIND bind[tuple_size];
 			memset(bind, 0, sizeof(bind));
@@ -404,23 +268,19 @@ namespace xorm {
 				if (iRet == 0) {
 					T tmp{};
 					int index = 0;
-					auto_params_lambda4<mysql> lambda4{ index ,bind,this };
-					each_tuple<0, tuple_size>::each(tmp, lambda4);
-					//each_tuple<0, tuple_size>::each(tmp, [&bind,this,&index](auto& v) {
-					//	this->bind_value(v, bind[index], true);
-					//	++index;
-					//});
+					each_tuple<0, tuple_size>::each(tmp, [&bind,this,&index](auto& v) {
+						this->bind_value(v, bind[index], true);
+						++index;
+					});
 					bool r = mysql_stmt_bind_result(pStmt, bind);
 					if (!r) {
 						r = mysql_stmt_execute(pStmt);
 						if (!r) {
 							while (mysql_stmt_fetch(pStmt) == 0) {
 								T copy_v = tmp;
-								auto_params_lambda5<mysql> lambda5{ bind ,this };
-								each_tuple<0, tuple_size>::each2(tmp, copy_v, lambda5);
-								//each_tuple<0, tuple_size>::each2(tmp, copy_v,[&bind,this](auto& v,auto& u) {
-								//	this->clear_field(v,u);
-								//});
+								each_tuple<0, tuple_size>::each2(tmp, copy_v,[&bind,this](auto& v,auto& u) {
+									this->clear_field(v,u);
+								});
 								result.push_back(copy_v);
 							}
 							return { true,result };
