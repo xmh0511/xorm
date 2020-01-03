@@ -153,7 +153,7 @@ namespace reflector
 
 #define GENERATOR_META(N,ClassName,...) \
 static std::array<char const*,N> ClassName##_element_name_arr = { expand_marco(concat_a_b(For_,N)(element_name_macro,ClassName,__VA_ARGS__)) }; \
-struct ClassName_##_meta_info \
+struct ClassName##_meta_info \
 {   \
     auto get_element_names()-> std::array<char const*,N> \
 		{ \
@@ -169,9 +169,9 @@ struct ClassName_##_meta_info \
     } \
     constexpr std::size_t element_size() { return N; } \
 }; \
-auto meta_info_reflect(ClassName const& t)->ClassName_##_meta_info \
+auto meta_info_reflect(ClassName const& t)->ClassName##_meta_info \
 { \
-    return ClassName_##_meta_info{}; \
+    return ClassName##_meta_info{}; \
 }
 #define REFLECTION(ClassName,...) GENERATOR_META(get_count(__VA_ARGS__),ClassName,__VA_ARGS__)
 
