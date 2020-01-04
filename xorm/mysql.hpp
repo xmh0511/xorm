@@ -491,6 +491,9 @@ namespace xorm {
 						}
 					}
 				}
+				else {
+					std::cout << mysql_error(conn_) << std::endl;
+				}
 				rollback();
 			}
 			return { 0 ,0};
