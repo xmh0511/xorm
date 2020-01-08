@@ -29,15 +29,15 @@ int main() {
 			test data;
 			data.id = 0;
 			data.a = i;
-			data.b = "t0 中国好"+ std::to_string(i);
-			data.time = "2019-10-25 18:05:01";
+			data.b = "t0 中国好" + std::to_string(i);
+			data.time.format_timestamp(std::time(nullptr));
 			data.date = "2019-10-09";
 			data.tm.format_timestamp(std::time(nullptr));
 			data.money = 12.03;
 			dao.insert(data);
 			std::this_thread::sleep_for(std::chrono::milliseconds(800));
 		}
-	});
+		});
 	auto t1 = std::thread([]() {
 		dao_t<mysql> t;
 		t.start_transaction();
@@ -46,13 +46,13 @@ int main() {
 			data.id = 0;
 			data.a = i;
 			data.b = "t1 中国好" + std::to_string(i);
-			data.time = "2019-10-25 18:05:01";
+			data.time.format_timestamp(std::time(nullptr));
 			data.date = "2019-10-09";
 			data.tm.format_timestamp(std::time(nullptr));
 			t.insert(data);
 			std::this_thread::sleep_for(std::chrono::milliseconds(802));
 		}
-	});
+		});
 	auto t2 = std::thread([]() {
 		dao_t<mysql> t;
 		t.start_transaction();
@@ -61,13 +61,13 @@ int main() {
 			data.id = 0;
 			data.a = i;
 			data.b = "t2 中国好" + std::to_string(i);
-			data.time = "2019-10-25 18:05:01";
+			data.time.format_timestamp(std::time(nullptr));
 			data.date = "2019-10-09";
 			data.tm.format_timestamp(std::time(nullptr));
 			t.insert(data);
 			std::this_thread::sleep_for(std::chrono::milliseconds(803));
 		}
-	});
+		});
 	auto t3 = std::thread([]() {
 		dao_t<mysql> t;
 		t.start_transaction();
@@ -76,13 +76,13 @@ int main() {
 			data.id = 0;
 			data.a = i;
 			data.b = "t3 中国好" + std::to_string(i);
-			data.time = "2019-10-25 18:05:01";
+			data.time.format_timestamp(std::time(nullptr));
 			data.date = "2019-10-09";
 			data.tm.format_timestamp(std::time(nullptr));
 			t.insert(data);
 			std::this_thread::sleep_for(std::chrono::milliseconds(804));
 		}
-	});
+		});
 	{
 		dao_t<mysql> dao_query;
 		dao_query.start_transaction();

@@ -117,20 +117,42 @@ namespace xorm {
 			return encode_time();
 		}
 		void format_timestamp(std::time_t timestamp) {
-			char buff[1024];
-			std::string format;
+			struct tm* ttime = localtime(&timestamp);
+			auto year = ttime->tm_year + 1900;
+			auto month = ttime->tm_mon + 1;
+			auto day = ttime->tm_mday;
+			auto hour = ttime->tm_hour;
+			auto minute = ttime->tm_min;
+			auto second = ttime->tm_sec;
 			if (FieldType == MYSQL_TYPE_DATETIME) {
-				format = "%Y-%m-%d %H:%M:%S";
+				data_.year = year;
+				data_.month = month;
+				data_.day = day;
+				data_.hour = hour;
+				data_.minute = minute;
+				data_.second = second;
+				data_.second_part = 0;
 			}
 			else if (FieldType == MYSQL_TYPE_DATE) {
-				format = "%Y-%m-%d";
+				data_.year = year;
+				data_.month = month;
+				data_.day = day;
+				data_.hour = 0;
+				data_.minute = 0;
+				data_.second = 0;
+				data_.second_part = 0;
 			}
 			else if (FieldType == MYSQL_TYPE_TIME) {
-				format = "%H:%M:%S";
+				data_.year = 0;
+				data_.month = 0;
+				data_.day = 0;
+				data_.hour = hour;
+				data_.minute = minute;
+				data_.second = second;
+				data_.second_part = 0;
+				data_.neg = 0;
 			}
-			struct tm* ttime = localtime(&timestamp);
-			strftime(buff, sizeof(buff), format.c_str(), ttime);
-			decode_time(std::string(buff));
+			is_null_ = false;
 		}
 	private:
 		void decode_time(std::string const& date) {
@@ -168,13 +190,13 @@ namespace xorm {
 		std::string encode_time() const {
 			std::stringstream ss;
 			if (FieldType == MYSQL_TYPE_DATETIME) {
-				ss << data_.year << "-" << fix_number(data_.month) << "-" << fix_number(data_.day) << " " << fix_number(data_.hour) << ":" << fix_number(data_.minute) << ":" << fix_number(data_.second) ; //<< "." << data_.second_part
+				ss << data_.year << "-" << fix_number(data_.month) << "-" << fix_number(data_.day) << " " << fix_number(data_.hour) << ":" << fix_number(data_.minute) << ":" << fix_number(data_.second); //<< "." << data_.second_part
 			}
 			else if (FieldType == MYSQL_TYPE_DATE) {
 				ss << data_.year << "-" << fix_number(data_.month) << "-" << fix_number(data_.day);
 			}
 			else if (FieldType == MYSQL_TYPE_TIME) {
-				ss << fix_number(data_.hour) << ":" << fix_number(data_.minute) << ":" << fix_number(data_.second) ; //<< "." << data_.second_part
+				ss << fix_number(data_.hour) << ":" << fix_number(data_.minute) << ":" << fix_number(data_.second); //<< "." << data_.second_part
 			}
 			return ss.str();
 		}
