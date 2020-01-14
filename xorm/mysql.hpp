@@ -386,10 +386,8 @@ namespace xorm {
 						}
 					}
 				}
-				else {
-					std::cout << mysql_error(conn_) << std::endl;
-				}
 			}
+			std::cout << mysql_error(conn_) << std::endl;
 			return { false,result };
 		}
 
@@ -429,10 +427,8 @@ namespace xorm {
 						}
 					}
 				}
-				else {
-					std::cout << mysql_error(conn_) << std::endl;
-				}
 			}
+			std::cout << mysql_error(conn_) << std::endl;
 			return { false,result };
 		}
 
@@ -491,9 +487,7 @@ namespace xorm {
 						}
 					}
 				}
-				else {
-					std::cout << mysql_error(conn_) << std::endl;
-				}
+				std::cout << mysql_error(conn_) << std::endl;
 				rollback();
 			}
 			return { 0 ,0 };
