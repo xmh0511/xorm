@@ -36,8 +36,7 @@ public:
 	void revert(std::weak_ptr<T> eleref) {
 		std::unique_lock<std::mutex> lock(mutex_);
 		pool_.push_back(eleref.lock());
-		lock.unlock();
-		cdvar_.notify_one();
+		cdvar_.notify_all();
 	}
 private:
 	std::vector<element_type> pool_;
