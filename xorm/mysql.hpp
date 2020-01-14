@@ -18,18 +18,18 @@
 namespace xorm {
 	template<typename T0>
 	struct auto_params_lambda0 {
-		auto_params_lambda0(std::stringstream& ss_, int& index_, std::size_t size_, std::string& value_place_, MYSQL_BIND* bind_, T0* that):ss(ss_), index(index_), size(size_), value_place(value_place_), bind(bind_), this_(that){
+		auto_params_lambda0(std::stringstream& ss_, int& index_, std::size_t size_, std::string& value_place_, MYSQL_BIND* bind_, T0* that) :ss(ss_), index(index_), size(size_), value_place(value_place_), bind(bind_), this_(that) {
 
 		}
-		template<typename T,typename U,typename Y>
-		void operator()(T&& obj,U&& name,Y&& field) {
+		template<typename T, typename U, typename Y>
+		void operator()(T&& obj, U&& name, Y&& field) {
 			this_->bind_value((obj.*field), bind[index]);
 			if (index < (size - 1)) {
-				ss << name << ",";
+				ss << "`" << name << "` " << ",";
 				value_place.append("?,");
 			}
 			else if (index == (size - 1)) {
-				ss << name;
+				ss << "`" << name << "` ";
 				value_place.append("?");
 			}
 			++index;
@@ -60,17 +60,17 @@ namespace xorm {
 	};*/
 	template<typename T0>
 	struct auto_params_lambda1 {
-		auto_params_lambda1(std::stringstream& ss_, int& index_, std::size_t size_,  MYSQL_BIND* bind_, T0* that) :ss(ss_), index(index_), size(size_), bind(bind_), this_(that) {
+		auto_params_lambda1(std::stringstream& ss_, int& index_, std::size_t size_, MYSQL_BIND* bind_, T0* that) :ss(ss_), index(index_), size(size_), bind(bind_), this_(that) {
 
 		}
 		template<typename T, typename U, typename Y>
 		void operator()(T&& obj, U&& name, Y&& field) {
 			this_->bind_value((obj.*field), bind[index]);
 			if (index < (size - 1)) {
-				ss << name << "=?" << ",";
+				ss << "`" << name << "`" << "=?" << ",";
 			}
 			else if (index == (size - 1)) {
-				ss << name << "=?";
+				ss << "`" << name << "`" << "=?";
 			}
 			++index;
 		}
@@ -82,7 +82,7 @@ namespace xorm {
 	};
 	template<typename T0>
 	struct auto_params_lambda2 {
-		auto_params_lambda2(int& index_,  MYSQL_BIND* bind_, T0* that) :index(index_), bind(bind_), this_(that) {
+		auto_params_lambda2(int& index_, MYSQL_BIND* bind_, T0* that) :index(index_), bind(bind_), this_(that) {
 
 		}
 		template<typename T, typename U, typename Y>
@@ -94,9 +94,9 @@ namespace xorm {
 		MYSQL_BIND* bind;
 		T0* this_;
 	};
-	template<typename Object,typename T0>
+	template<typename Object, typename T0>
 	struct auto_params_lambda3 {
-		auto_params_lambda3(T0* that, Object& copy_v_) : this_(that), copy_v(copy_v_){
+		auto_params_lambda3(T0* that, Object& copy_v_) : this_(that), copy_v(copy_v_) {
 
 		}
 		template<typename T, typename U, typename Y>
@@ -108,7 +108,7 @@ namespace xorm {
 	};
 	template<typename T0>
 	struct auto_params_lambda4 {
-		auto_params_lambda4(int& index_,  MYSQL_BIND* bind_, T0* that) :index(index_),bind(bind_), this_(that) {
+		auto_params_lambda4(int& index_, MYSQL_BIND* bind_, T0* that) :index(index_), bind(bind_), this_(that) {
 
 		}
 		template<typename T>
@@ -125,8 +125,8 @@ namespace xorm {
 		auto_params_lambda5(MYSQL_BIND* bind_, T0* that) : bind(bind_), this_(that) {
 
 		}
-		template<typename T,typename U>
-		void operator()(T& v,U& u) {
+		template<typename T, typename U>
+		void operator()(T& v, U& u) {
 			this_->clear_field(v, u);
 		}
 		MYSQL_BIND* bind;
@@ -157,7 +157,7 @@ namespace xorm {
 		using MysqlTime = TimeDate<MYSQL_TYPE_TIME>;
 	private:
 		template<typename T>
-		typename std::enable_if<is_fundamention_type<typename std::remove_reference<T>::type>::value || is_date_type<typename std::remove_reference<T>::type>::value>::type bind_value(T& t, MYSQL_BIND& bind, bool get = false) {
+		typename std::enable_if<is_fundamention_type<typename std::remove_reference<T>::type>::value || is_date_type<typename std::remove_reference<T>::type>::value>::type bind_value(T & t, MYSQL_BIND & bind, bool get = false) {
 			using type = typename std::remove_reference<T>::type;
 			bind.buffer_type = type::field_type;
 			bind.buffer = t.buffer();
@@ -177,14 +177,14 @@ namespace xorm {
 			bind.buffer_length = (unsigned long)t.size();
 		}
 
-		template<typename T,typename U>
-		typename std::enable_if<std::is_same<typename std::remove_reference<T>::type, std::string>::value>::type clear_field(T& t,U& v) {
+		template<typename T, typename U>
+		typename std::enable_if<std::is_same<typename std::remove_reference<T>::type, std::string>::value>::type clear_field(T& t, U& v) {
 			v = std::string(&v[0], strlen(v.data()));
 			memset(&t[0], 0, t.size());
 		}
 
 		template<typename T, typename U>
-		typename std::enable_if<!std::is_same<typename std::remove_reference<T>::type, std::string>::value>::type clear_field(T& t,U& v) {
+		typename std::enable_if<!std::is_same<typename std::remove_reference<T>::type, std::string>::value>::type clear_field(T& t, U& v) {
 			t.clear();
 		}
 	public:
@@ -231,7 +231,7 @@ namespace xorm {
 			}
 		}
 		bool is_connect() {
-			return conn_!=nullptr && is_connect_;
+			return conn_ != nullptr && is_connect_;
 		}
 
 		bool ping() {
@@ -239,7 +239,7 @@ namespace xorm {
 				is_connect_ = false;
 				return false;
 			}
-			bool r =  mysql_ping(conn_) == 0;
+			bool r = mysql_ping(conn_) == 0;
 			if (!r) {
 				is_connect_ = false;
 			}
@@ -338,7 +338,7 @@ namespace xorm {
 		}
 
 		template<typename T>
-		typename std::enable_if<reflector::is_reflect_class<typename std::remove_reference<T>::type>::value, std::pair<bool, std::vector<T>>>::type query(std::string const& condition="" ) {
+		typename std::enable_if<reflector::is_reflect_class<typename std::remove_reference<T>::type>::value, std::pair<bool, std::vector<T>>>::type query(std::string const& condition = "") {
 			auto meta = meta_info_reflect(T{});
 			std::string tablename = meta.get_class_name();
 			std::stringstream ss;
@@ -348,12 +348,12 @@ namespace xorm {
 			ss << "SELECT ";
 			auto size = name_arr.size();
 			for (auto index = 0; index < size; index++) {
-				ss << name_arr[index];
+				ss << "`" << name_arr[index] << "` ";
 				if (index < (size - 1)) {
 					ss << ",";
 				}
 			}
-			ss << " FROM " << tablename<<" "<< condition;
+			ss << " FROM " << tablename << " " << condition;
 			MYSQL_STMT* pStmt = nullptr;
 			pStmt = mysql_stmt_init(conn_);
 			std::vector<T> result;
@@ -496,7 +496,7 @@ namespace xorm {
 				}
 				rollback();
 			}
-			return { 0 ,0};
+			return { 0 ,0 };
 		}
 	private:
 		MYSQL* conn_;
