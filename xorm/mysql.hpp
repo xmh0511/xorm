@@ -179,12 +179,13 @@ namespace xorm {
 
 		template<typename T, typename U>
 		typename std::enable_if<std::is_same<typename std::remove_reference<T>::type, std::string>::value>::type clear_field(T& t, U& v) {
-			v = std::string(&v[0], strlen(v.data()));
+			v = std::move(std::string(&t[0], strlen(t.data())));
 			memset(&t[0], 0, t.size());
 		}
 
 		template<typename T, typename U>
 		typename std::enable_if<!std::is_same<typename std::remove_reference<T>::type, std::string>::value>::type clear_field(T& t, U& v) {
+			v = t;
 			t.clear();
 		}
 	public:
@@ -374,13 +375,13 @@ namespace xorm {
 						r = mysql_stmt_execute(pStmt);
 						if (!r) {
 							while (mysql_stmt_fetch(pStmt) == 0) {
-								T copy_v = tmp;
+								T copy_v{};
 								auto_params_lambda3<T, mysql> lambda3{ this,copy_v };
 								reflector::each_object(tmp, lambda3);
 								//reflector::each_object(tmp, [this,&copy_v](auto&& obj, auto name, auto field) {
 								//	this->clear_field((obj.*field),(copy_v.*field));
 								//});
-								result.push_back(std::move(copy_v));
+								result.emplace_back(std::move(copy_v));
 							}
 							return { true,result };
 						}
@@ -415,13 +416,13 @@ namespace xorm {
 						r = mysql_stmt_execute(pStmt);
 						if (!r) {
 							while (mysql_stmt_fetch(pStmt) == 0) {
-								T copy_v = tmp;
+								T copy_v{};
 								auto_params_lambda5<mysql> lambda5{ bind ,this };
 								each_tuple<0, tuple_size>::each2(tmp, copy_v, lambda5);
 								//each_tuple<0, tuple_size>::each2(tmp, copy_v,[&bind,this](auto& v,auto& u) {
 								//	this->clear_field(v,u);
 								//});
-								result.push_back(copy_v);
+								result.emplace_back(std::move(copy_v));
 							}
 							return { true,result };
 						}
