@@ -41,23 +41,7 @@ namespace xorm {
 		MYSQL_BIND* bind;
 		T0* this_;
 	};
-	/*
-	template<typename T0>
-	struct auto_params_lambda0 {
-		auto_params_lambda0(std::stringstream& ss_, int& index_, std::size_t size_, std::string& value_place_, MYSQL_BIND* bind_, T0* that):ss(ss_), index(index_), size(size_), value_place(value_place_), bind(bind_), this_(that){
 
-		}
-		template<typename T, typename U, typename Y>
-		void operator()(T&& obj, U&& name, Y&& field) {
-
-		}
-		std::stringstream& ss;
-		int& index;
-		std::size_t size;
-		std::string& value_place;
-		MYSQL_BIND* bind;
-		T0* this_;
-	};*/
 	template<typename T0>
 	struct auto_params_lambda1 {
 		auto_params_lambda1(std::stringstream& ss_, int& index_, std::size_t size_, MYSQL_BIND* bind_, T0* that) :ss(ss_), index(index_), size(size_), bind(bind_), this_(that) {
@@ -132,6 +116,22 @@ namespace xorm {
 		MYSQL_BIND* bind;
 		T0* this_;
 	};
+	template<typename T>
+	class stmt_guard {
+	public:
+		template<typename U>
+		stmt_guard(U&& resource) :resource_(std::forward<U>(resource)) {
+
+		}
+	public:
+		~stmt_guard() {
+			if (resource_ != nullptr) {
+				mysql_stmt_close(resource_);
+			}
+		}
+	private:
+		T* resource_ = nullptr;
+	};
 	class mysql final {
 		template<typename T0>
 		friend struct auto_params_lambda0;
@@ -180,7 +180,7 @@ namespace xorm {
 		template<typename T, typename U>
 		typename std::enable_if<std::is_same<typename std::remove_reference<T>::type, std::string>::value>::type clear_field(T& t, U& v) {
 			v = std::move(std::string(&t[0], strlen(t.data())));
-			memset(&t[0], 0, t.size());
+			//memset(&t[0], 0, t.size()); no use optimized
 		}
 
 		template<typename T, typename U>
@@ -260,18 +260,6 @@ namespace xorm {
 			memset(bind, 0, sizeof(bind));
 			auto_params_lambda0<mysql> lambda{ ss ,index ,size ,value_place ,bind,this };
 			reflector::each_object(std::forward<T>(t), lambda);
-			//reflector::each_object(std::forward<T>(t), [&ss, &index, size, &value_place, &bind, this](auto&& obj, auto name, auto field) {
-			//	this->bind_value((obj.*field), bind[index]);
-			//	if (index < (size - 1)) {
-			//		ss << name << ",";
-			//		value_place.append("?,");
-			//	}
-			//	else if (index == (size - 1)) {
-			//		ss << name;
-			//		value_place.append("?");
-			//	}
-			//	++index;
-			//});
 			ss << ")" << " VALUES(" << value_place << ")";
 			return stmt_execute(ss.str(), bind);
 		}
@@ -297,18 +285,6 @@ namespace xorm {
 				std::string value_place = "";
 				auto_params_lambda0<mysql> lambda{ ss ,index ,size ,value_place ,bind,this };
 				reflector::each_object(std::forward<T>(v), lambda);
-				//reflector::each_object(std::forward<T>(v), [&ss, &index, size, &value_place, &bind, this](auto&& obj, auto name, auto field) {
-				//	this->bind_value((obj.*field), bind[index]);
-				//	if (index < (size - 1)) {
-				//		ss << name << ",";
-				//		value_place.append("?,");
-				//	}
-				//	else if (index == (size - 1)) {
-				//		ss << name;
-				//		value_place.append("?");
-				//	}
-				//	++index;
-				//});
 				ss << ")" << " VALUES(" << value_place << ")";
 			}
 			else {
@@ -317,16 +293,6 @@ namespace xorm {
 				int index = 0;
 				auto_params_lambda1<mysql> lambda1{ ss ,index ,size ,bind ,this };
 				reflector::each_object(std::forward<T>(v), lambda1);
-				//reflector::each_object(std::forward<T>(v), [&ss, &index, size, &bind, this](auto&& obj, auto name, auto field) {
-				//	this->bind_value((obj.*field), bind[index]);
-				//	if (index < (size - 1)) {
-				//		ss << name << "=?" << ",";
-				//	}
-				//	else if (index == (size - 1)) {
-				//		ss << name << "=?";
-				//	}
-				//	++index;
-				//});
 				ss << " " << condition;
 			}
 			auto rpr = stmt_execute(ss.str(), bind);
@@ -355,8 +321,8 @@ namespace xorm {
 				}
 			}
 			ss << " FROM " << tablename << " " << condition;
-			MYSQL_STMT* pStmt = nullptr;
-			pStmt = mysql_stmt_init(conn_);
+			MYSQL_STMT*  pStmt = mysql_stmt_init(conn_);
+			stmt_guard<MYSQL_STMT> guard(pStmt);
 			std::vector<T> result;
 			if (pStmt != nullptr) {
 				auto sqlStr = ss.str();
@@ -366,21 +332,15 @@ namespace xorm {
 					int index = 0;
 					auto_params_lambda2<mysql> lambda{ index ,bind ,this };
 					reflector::each_object(tmp, lambda);
-					//reflector::each_object(tmp, [&index, &bind, this](auto&& obj, auto name, auto field) {
-					//	this->bind_value((obj.*field), bind[index], true);
-					//	++index;
-					//});
 					bool r = mysql_stmt_bind_result(pStmt, bind);
 					if (!r) {
 						r = mysql_stmt_execute(pStmt);
+						r |= mysql_stmt_store_result(pStmt) != 0;
 						if (!r) {
 							while (mysql_stmt_fetch(pStmt) == 0) {
 								T copy_v{};
 								auto_params_lambda3<T, mysql> lambda3{ this,copy_v };
 								reflector::each_object(tmp, lambda3);
-								//reflector::each_object(tmp, [this,&copy_v](auto&& obj, auto name, auto field) {
-								//	this->clear_field((obj.*field),(copy_v.*field));
-								//});
 								result.emplace_back(std::move(copy_v));
 							}
 							return { true,result };
@@ -397,8 +357,8 @@ namespace xorm {
 			constexpr std::size_t tuple_size = std::tuple_size<T>::value;
 			MYSQL_BIND bind[tuple_size];
 			memset(bind, 0, sizeof(bind));
-			MYSQL_STMT* pStmt = nullptr;
-			pStmt = mysql_stmt_init(conn_);
+			MYSQL_STMT* pStmt = mysql_stmt_init(conn_);
+			stmt_guard<MYSQL_STMT> guard(pStmt);
 			std::vector<T> result;
 			if (pStmt != nullptr) {
 				int iRet = mysql_stmt_prepare(pStmt, sqlStr.c_str(), (unsigned long)sqlStr.size());
@@ -407,21 +367,15 @@ namespace xorm {
 					int index = 0;
 					auto_params_lambda4<mysql> lambda4{ index ,bind,this };
 					each_tuple<0, tuple_size>::each(tmp, lambda4);
-					//each_tuple<0, tuple_size>::each(tmp, [&bind,this,&index](auto& v) {
-					//	this->bind_value(v, bind[index], true);
-					//	++index;
-					//});
 					bool r = mysql_stmt_bind_result(pStmt, bind);
 					if (!r) {
 						r = mysql_stmt_execute(pStmt);
+						r |= mysql_stmt_store_result(pStmt) != 0;
 						if (!r) {
 							while (mysql_stmt_fetch(pStmt) == 0) {
 								T copy_v{};
 								auto_params_lambda5<mysql> lambda5{ bind ,this };
 								each_tuple<0, tuple_size>::each2(tmp, copy_v, lambda5);
-								//each_tuple<0, tuple_size>::each2(tmp, copy_v,[&bind,this](auto& v,auto& u) {
-								//	this->clear_field(v,u);
-								//});
 								result.emplace_back(std::move(copy_v));
 							}
 							return { true,result };
@@ -462,8 +416,8 @@ namespace xorm {
 		}
 	private:
 		std::pair<std::uint64_t, std::uint64_t> stmt_execute(std::string const& sqlStr, MYSQL_BIND* bind) {
-			MYSQL_STMT* pStmt = nullptr;
-			pStmt = mysql_stmt_init(conn_);
+			MYSQL_STMT* pStmt = mysql_stmt_init(conn_);
+			stmt_guard<MYSQL_STMT> guard(pStmt);
 			if (pStmt != nullptr) {
 				begin();
 				int iRet = mysql_stmt_prepare(pStmt, sqlStr.data(), (unsigned long)sqlStr.size());
