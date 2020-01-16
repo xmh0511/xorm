@@ -20,7 +20,7 @@ namespace xorm {
 	}
 	template<typename DataBaseType>
 	class dao_t {
-	private:
+	public:
 		static simple_pool<DataBaseType>& get_conn_pool() {
 			auto& config = init_database_config();
 			static Pool<DataBaseType> pool{ config.conn_number,config };
