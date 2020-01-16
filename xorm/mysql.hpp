@@ -193,6 +193,9 @@ namespace xorm {
 		mysql(dataBaseConfig const& config) {
 			connect(config);
 		}
+		~mysql() {
+			disconnect();
+		}
 	public:
 		void connect(dataBaseConfig const& config) {
 			bool is_success = false;
@@ -217,6 +220,9 @@ namespace xorm {
 
 			if (is_success && nullptr != mysql_real_connect(conn_, config.host.c_str(), config.user.c_str(), config.password.c_str(), config.dbname.c_str(), config.port, nullptr, 0)) {
 				is_connect_ = true;
+			}
+			else {
+				std::cout << mysql_error(conn_) << std::endl;
 			}
 		}
 		void reconnect(dataBaseConfig const& config) {
