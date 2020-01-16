@@ -448,7 +448,7 @@ namespace xorm {
 			return { 0 ,0 };
 		}
 	private:
-		MYSQL* conn_;
+		MYSQL* conn_ = nullptr;
 		bool is_connect_ = false;
 		std::size_t string_max_size_ = 1024 * 1024;
 	};
