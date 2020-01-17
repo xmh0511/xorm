@@ -11,6 +11,7 @@
 #include <memory>
 #include <cstring>
 #include <tuple>
+#include <functional>
 #include "reflect/reflector.hpp"
 #include "data_type.hpp"
 #include "meta_utility.hpp"
@@ -189,12 +190,21 @@ namespace xorm {
 			t.clear();
 		}
 	public:
-		mysql() = default;
+		mysql() {
+			init_error_default_callback();
+		}
 		mysql(dataBaseConfig const& config) {
+			init_error_default_callback();
 			connect(config);
 		}
 		~mysql() {
 			disconnect();
+		}
+	private:
+		void init_error_default_callback() {
+			error_callback_ = [](std::string const& message) {
+				std::cout << message << std::endl;
+			};
 		}
 	public:
 		void connect(dataBaseConfig const& config) {
@@ -222,7 +232,7 @@ namespace xorm {
 				is_connect_ = true;
 			}
 			else {
-				std::cout << mysql_error(conn_) << std::endl;
+				trigger_error(mysql_error(conn_));
 			}
 		}
 		void reconnect(dataBaseConfig const& config) {
@@ -327,7 +337,7 @@ namespace xorm {
 				}
 			}
 			ss << " FROM " << tablename << " " << condition;
-			MYSQL_STMT*  pStmt = mysql_stmt_init(conn_);
+			MYSQL_STMT* pStmt = mysql_stmt_init(conn_);
 			stmt_guard<MYSQL_STMT> guard(pStmt);
 			std::vector<T> result;
 			if (pStmt != nullptr) {
@@ -354,7 +364,7 @@ namespace xorm {
 					}
 				}
 			}
-			std::cout << mysql_error(conn_) << std::endl;
+			trigger_error(mysql_error(conn_));
 			return { false,result };
 		}
 
@@ -389,7 +399,7 @@ namespace xorm {
 					}
 				}
 			}
-			std::cout << mysql_error(conn_) << std::endl;
+			trigger_error(mysql_error(conn_));
 			return { false,result };
 		}
 
@@ -401,7 +411,7 @@ namespace xorm {
 				mysql_free_result(pRes);
 			}
 			else {
-				std::cout << mysql_error(conn_) << std::endl;
+				trigger_error(mysql_error(conn_));
 			}
 			return r;
 		}
@@ -448,14 +458,26 @@ namespace xorm {
 						}
 					}
 				}
-				std::cout << mysql_error(conn_) << std::endl;
+				trigger_error(mysql_error(conn_));
 				rollback();
 			}
 			return { 0 ,0 };
+		}
+	public:
+		void set_error_callback(std::function<void(std::string const&)> const& callback) {
+			if (callback != nullptr) {
+				error_callback_ = callback;
+			}
+		}
+		void trigger_error(std::string const& message) {
+			if (error_callback_ != nullptr) {
+				error_callback_(message);
+			}
 		}
 	private:
 		MYSQL* conn_ = nullptr;
 		bool is_connect_ = false;
 		std::size_t string_max_size_ = 1024 * 1024;
+		std::function<void(std::string const&)> error_callback_;
 	};
 }

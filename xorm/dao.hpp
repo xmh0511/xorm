@@ -18,6 +18,32 @@ namespace xorm {
 		static dataBaseConfig config{ v };
 		return config;
 	}
+	class dao_message {
+	public:
+		static dao_message& get() {
+			static dao_message instance;
+			return instance;
+		}
+	private:
+		dao_message() {
+			error_callback_ = [](std::string const& message) {
+				std::cout << message << std::endl;
+			};
+		}
+	public:
+		void set_error_callback(std::function<void(std::string const&)> const& callback) {
+			if (callback != nullptr) {
+				error_callback_ = callback;
+			}
+		}
+		void trigger_error(std::string const& message) {
+			if (error_callback_ != nullptr) {
+				error_callback_(message);
+			}
+		}
+	private:
+		std::function<void(std::string const&)> error_callback_;
+	};
 	template<typename DataBaseType>
 	class dao_t {
 	public:
@@ -30,6 +56,9 @@ namespace xorm {
 		dao_t() {
 			simple_pool<DataBaseType>& pool = get_conn_pool();
 			conn_ = pool.takeout();
+			conn_->set_error_callback([this](std::string const& message) {
+				dao_message::get().trigger_error(message);
+			});
 			if (!conn_->ping()) {
 				auto& config = init_database_config();
 				conn_->reconnect(config);
@@ -94,7 +123,6 @@ namespace xorm {
 		bool is_open() {
 			return conn_->is_connect();
 		}
-
 	public:
 		~dao_t() {
 			if (start_transaction_) {
