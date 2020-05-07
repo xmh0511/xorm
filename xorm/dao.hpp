@@ -5,19 +5,6 @@
 #include "dbconfig.hpp"
 namespace xorm {
 
-	template<typename T>
-	struct Pool {
-		Pool(std::size_t size, dataBaseConfig const& config):pool_(size){
-			pool_.init_pool([&config](std::shared_ptr<T>& iter) {
-				iter = std::make_shared<T>(config);
-			});
-		}
-		simple_pool<T> pool_;
-	};
-	inline dataBaseConfig& init_database_config(dataBaseConfig const& v = {}) {
-		static dataBaseConfig config{ v };
-		return config;
-	}
 	class dao_message {
 	public:
 		static dao_message& get() {
@@ -44,6 +31,23 @@ namespace xorm {
 	private:
 		std::function<void(std::string const&)> error_callback_;
 	};
+
+	template<typename T>
+	struct Pool {
+		Pool(std::size_t size, dataBaseConfig const& config):pool_(size){
+			pool_.init_pool([&config](std::shared_ptr<T>& iter) {
+				iter = std::make_shared<T>(config, [](std::string const& message) {
+					dao_message::get().trigger_error(message);
+				});
+			});
+		}
+		simple_pool<T> pool_;
+	};
+	inline dataBaseConfig& init_database_config(dataBaseConfig const& v = {}) {
+		static dataBaseConfig config{ v };
+		return config;
+	}
+
 	template<typename DataBaseType>
 	class dao_t {
 	public:
@@ -56,9 +60,9 @@ namespace xorm {
 		dao_t() {
 			simple_pool<DataBaseType>& pool = get_conn_pool();
 			conn_ = pool.takeout();
-			conn_->set_error_callback([this](std::string const& message) {
-				dao_message::get().trigger_error(message);
-			});
+			//conn_->set_error_callback([this](std::string const& message) {
+			//	dao_message::get().trigger_error(message);
+			//});
 			if (!conn_->ping()) {
 				auto& config = init_database_config();
 				conn_->reconnect(config);

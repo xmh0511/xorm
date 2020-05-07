@@ -193,8 +193,13 @@ namespace xorm {
 		mysql() {
 			init_error_default_callback();
 		}
-		mysql(dataBaseConfig const& config) {
-			init_error_default_callback();
+		mysql(dataBaseConfig const& config,std::function<void(std::string const&)> const& error_callback = nullptr) {
+			if (error_callback == nullptr) {
+				init_error_default_callback();
+			}
+			else {
+				error_callback_ = error_callback;
+			}
 			connect(config);
 		}
 		~mysql() {
