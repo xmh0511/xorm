@@ -208,7 +208,7 @@ namespace xorm {
 	private:
 		void init_error_default_callback() {
 			error_callback_ = [](std::string const& message) {
-				std::cout << message << std::endl;
+				std::cout << message << "\n";
 			};
 		}
 	public:
