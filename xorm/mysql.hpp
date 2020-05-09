@@ -335,7 +335,7 @@ namespace xorm {
 			auto name_arr = meta.get_element_names();
 			ss << "SELECT ";
 			auto size = name_arr.size();
-			for (auto index = 0; index < size; index++) {
+			for (std::size_t index = 0; index < size; index++) {
 				ss << "`" << name_arr[index] << "` ";
 				if (index < (size - 1)) {
 					ss << ",";
