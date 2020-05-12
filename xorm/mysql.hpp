@@ -273,7 +273,7 @@ namespace xorm {
 			auto meta = meta_info_reflect(t);
 			std::string tablename = meta.get_class_name();
 			std::stringstream ss;
-			ss << "INSERT INTO " << tablename << " (";
+			ss << "INSERT INTO `" << tablename << "` (";
 			auto size = meta.element_size();
 			int index = 0;
 			std::string value_place = "";
@@ -300,7 +300,7 @@ namespace xorm {
 			MYSQL_BIND bind[meta.element_size()];
 			memset(bind, 0, sizeof(bind));
 			if (condition.empty()) {
-				ss << "replace  into " << tablename << " (";
+				ss << "replace  into `" << tablename << "` (";
 				auto size = meta.element_size();
 				int index = 0;
 				std::string value_place = "";
@@ -309,7 +309,7 @@ namespace xorm {
 				ss << ")" << " VALUES(" << value_place << ")";
 			}
 			else {
-				ss << "UPDATE " << tablename << " SET ";
+				ss << "UPDATE `" << tablename << "` SET ";
 				auto size = meta.element_size();
 				int index = 0;
 				auto_params_lambda1<mysql> lambda1{ ss ,index ,size ,bind ,this };
@@ -341,7 +341,7 @@ namespace xorm {
 					ss << ",";
 				}
 			}
-			ss << " FROM " << tablename << " " << condition;
+			ss << " FROM `" << tablename << "` " << condition;
 			MYSQL_STMT* pStmt = mysql_stmt_init(conn_);
 			stmt_guard<MYSQL_STMT> guard(pStmt);
 			std::vector<T> result;
