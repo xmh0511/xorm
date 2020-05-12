@@ -440,7 +440,7 @@ namespace xorm {
 			MYSQL_STMT* pStmt = mysql_stmt_init(conn_);
 			stmt_guard<MYSQL_STMT> guard(pStmt);
 			if (pStmt != nullptr) {
-				begin();
+				//begin();
 				int iRet = mysql_stmt_prepare(pStmt, sqlStr.data(), (unsigned long)sqlStr.size());
 				if (iRet == 0) {
 					iRet = mysql_stmt_bind_param(pStmt, bind);
@@ -449,9 +449,9 @@ namespace xorm {
 						if (iRet == 0) {
 							auto rows = mysql_stmt_affected_rows(pStmt);
 							if (rows != 0) {
-								bool cr = commit();
+								//bool cr = commit();
 								auto pr = query<std::tuple<mysql::Integer>>("SELECT LAST_INSERT_ID();");
-								if (cr && pr.first) {
+								if (/*cr && */pr.first) {
 									auto& id_arr = pr.second;
 									if (!id_arr.empty()) {
 										auto id = std::get<0>((id_arr[0]));
@@ -464,7 +464,7 @@ namespace xorm {
 					}
 				}
 				trigger_error(mysql_error(conn_));
-				rollback();
+				//rollback();
 			}
 			return { 0 ,0 };
 		}
