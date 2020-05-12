@@ -112,6 +112,7 @@ namespace xorm {
 		}
 
 		bool rollback() {
+			start_transaction_ = false;
 			return conn_->rollback();
 		}
 
