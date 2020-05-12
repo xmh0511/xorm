@@ -193,7 +193,7 @@ namespace xorm {
 		mysql() {
 			init_error_default_callback();
 		}
-		mysql(dataBaseConfig const& config,std::function<void(std::string const&)> const& error_callback = nullptr) {
+		mysql(dataBaseConfig const& config, std::function<void(std::string const&)> const& error_callback = nullptr) {
 			if (error_callback == nullptr) {
 				init_error_default_callback();
 			}
@@ -293,36 +293,37 @@ namespace xorm {
 		}
 
 		template<typename T>
-		typename std::enable_if<reflector::is_reflect_class<typename std::remove_reference<T>::type>::value, bool>::type update(T&& v, std::string const& condition = "") {
+		typename std::enable_if<reflector::is_reflect_class<typename std::remove_reference<T>::type>::value, bool>::type update(T&& v) {
 			auto meta = meta_info_reflect(v);
 			std::string tablename = meta.get_class_name();
 			std::stringstream ss;
 			MYSQL_BIND bind[meta.element_size()];
 			memset(bind, 0, sizeof(bind));
-			if (condition.empty()) {
-				ss << "replace  into `" << tablename << "` (";
-				auto size = meta.element_size();
-				int index = 0;
-				std::string value_place = "";
-				auto_params_lambda0<mysql> lambda{ ss ,index ,size ,value_place ,bind,this };
-				reflector::each_object(std::forward<T>(v), lambda);
-				ss << ")" << " VALUES(" << value_place << ")";
-			}
-			else {
-				ss << "UPDATE `" << tablename << "` SET ";
-				auto size = meta.element_size();
-				int index = 0;
-				auto_params_lambda1<mysql> lambda1{ ss ,index ,size ,bind ,this };
-				reflector::each_object(std::forward<T>(v), lambda1);
-				ss << " " << condition;
-			}
+			ss << "replace  into `" << tablename << "` (";
+			auto size = meta.element_size();
+			int index = 0;
+			std::string value_place = "";
+			auto_params_lambda0<mysql> lambda{ ss ,index ,size ,value_place ,bind,this };
+			reflector::each_object(std::forward<T>(v), lambda);
+			ss << ")" << " VALUES(" << value_place << ")";
 			auto rpr = stmt_execute(ss.str(), bind);
-			if (condition.empty()) {
-				return rpr.first == 2 ? true : false;
-			}
-			else {
-				return rpr.first != 0 ? true : false;
-			}
+			return rpr.first == 2 ? true : false;
+		}
+
+		template<typename T>
+		typename std::enable_if<reflector::is_reflect_class<typename std::remove_reference<T>::type>::value, std::pair<std::uint64_t, std::uint64_t>>::type update(T&& v, std::string const& condition) {
+			auto meta = meta_info_reflect(v);
+			std::string tablename = meta.get_class_name();
+			std::stringstream ss;
+			MYSQL_BIND bind[meta.element_size()];
+			memset(bind, 0, sizeof(bind));
+			ss << "UPDATE `" << tablename << "` SET ";
+			auto size = meta.element_size();
+			int index = 0;
+			auto_params_lambda1<mysql> lambda1{ ss ,index ,size ,bind ,this };
+			reflector::each_object(std::forward<T>(v), lambda1);
+			ss << " " << condition;
+			return stmt_execute(ss.str(), bind);
 		}
 
 		template<typename T>

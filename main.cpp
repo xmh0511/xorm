@@ -88,6 +88,11 @@ int main() {
 		dao_query.start_transaction();
 		auto r = dao_query.query<test>(" for update");
 		std::cout << r.first << "  " << r.second.size() << std::endl;
+		if (!r.second.empty()) {
+			auto& info = r.second[0];
+			auto rr = dao_query.update(info,"where id=1");
+			std::cout << rr.first << std::endl;
+		}
 	}
 	t0.join();
 	t1.join();
