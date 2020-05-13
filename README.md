@@ -17,7 +17,7 @@
 * [查询](#查询)
 * [原生执行](#execute方法)
 * [开启事务](#开启事务) 
-
+* [日志监听](#日志监听)
   
 # 初始化配置
 >在使用之前需要进行数据库配置,通过init_database_config方法注册配置,配置参数如下:  
@@ -236,5 +236,19 @@ int main(){
       dao.rollback();
     }
     dao.commit();
+}
+````
+# 日志监听
+#### 可以通过设置回调方法获取数据库操作日志  
+>如语句执行错误等  
+````cpp
+#include <iostream>
+#include "mysql.hpp"
+#include "dao.hpp"
+using namespace xorm;
+int main(){
+	dao_message::get().set_error_callback([](std::string const& msg) {
+	   std::cout << msg << "\n";
+	});
 }
 ````
