@@ -11,7 +11,7 @@
 
 ###  使用方式    
 #### 初始化配置
->在使用之前需要进行数据库配置,配置参数如下
+>在使用之前需要进行数据库配置,通过init_database_config方法注册配置,配置参数如下:  
 * host 用来指定连接的地址
 * user 数据库用户名
 * password 数据库密码
@@ -40,14 +40,36 @@ int main(){
 }
 ````
 ####  新增数据
+>通过dao_t<DataBase>::insert 进行数据的添加：  
+##### std::pair<std::int64_t, std::int64_t> insert(T&& t)方法  
+* 参数： 通过REFLECTION注册过的表结构对象  
+* 返回类型： 影响的row数量和插入数据的id  
 ````
 #include <iostream>
 #include "mysql.hpp"
 #include "dao.hpp"
 using namespace xorm;
+struct test {
+	mysql::Integer id;
+	mysql::Integer a;
+	std::string b;
+	mysql::MysqlDateTime time;
+	mysql::MysqlDate date;
+	mysql::MysqlTime tm;
+	mysql::Double money;
+};
+REFLECTION(test, id, a, b, time, date, tm, money)
 int main(){
-	dao<mysql> t;
-	auto pr = t.insert(data);
+	dao_t<mysql> dao;
+	test data;
+	data.id = 0;
+	data.a = i;
+	data.b = "t0 你好" + std::to_string(i);
+	data.time.format_timestamp(std::time(nullptr));
+	data.date = "2019-10-09";
+	data.tm.format_timestamp(std::time(nullptr));
+	data.money = 12.03;
+	auto pr = dao.insert(data);
 	std::cout<<"insert row "<<pr.first<<" insert key "<<pr.second<<std::endl;
 }
 ````
