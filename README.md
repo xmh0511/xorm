@@ -150,7 +150,7 @@ int main(){
 >如 mysql::Integer{1}
 * 返回: 是否成功,查询的数据集合数组
 ###### 使用方式二   
-* 模板参数: 自定义std::tuple<T...> 如 	std::tuple<mysql::Integer,std::string> 代表查询的数据集的field类型
+* 模板参数: 自定义std::tuple\<T...\> 如 std::tuple\<mysql::Integer,std::string\> 代表查询的数据集的field类型
 * 参数： 完整的查询语句
 >"where id=?"
 * 后续参数: 条件中的值  
