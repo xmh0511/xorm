@@ -14,6 +14,8 @@
 * [修改](#修改)  
 * [查询](#查询)
 * [原生执行](#execute方法)
+* [开启事务](#开启事务) 
+
 ###  使用方式    
 #### 初始化配置
 >在使用之前需要进行数据库配置,通过init_database_config方法注册配置,配置参数如下:  
@@ -211,9 +213,9 @@ int main(){
 ###### start_transaction()
 >在声明的dao_t对象声明周期结束后会自动提交当前事务
 * 手动事务开启    
-###### begin()
-###### rollback()
-###### commit()  
+  ###### begin()
+  ###### rollback() 
+  ###### commit()  
 ````cpp
 #include <iostream>
 #include "mysql.hpp"
