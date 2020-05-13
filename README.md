@@ -9,7 +9,7 @@
 1. 增加sqlite,postgre等数据库支持  
 
 # 目录
-* [新增](####  新增数据)
+* [新增](#新增数据)
 
 ###  使用方式    
 #### 初始化配置
@@ -41,7 +41,7 @@ int main(){
         init_database_config(config); //全局初始化配置
 }
 ````
-####  新增数据
+#  新增数据
 >通过dao_t<DataBase>::insert 进行数据的添加  
 ##### std::pair<std::int64_t, std::int64_t> insert(T&& t)
 * 参数： 通过REFLECTION注册过的表结构对象  
