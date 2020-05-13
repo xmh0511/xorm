@@ -10,7 +10,10 @@
 
 # 目录
 * [新增](#新增数据)
-
+* [删除](#删除数据)
+* [修改](#修改)  
+* [查询](#查询)
+* [原生执行](#execute方法)
 ###  使用方式    
 #### 初始化配置
 >在使用之前需要进行数据库配置,通过init_database_config方法注册配置,配置参数如下:  
@@ -76,7 +79,7 @@ int main(){
 }
 ````
 
-####   删除数据
+#   删除数据
 >通过dao_t<DataBase>::del 进行数据的删减    
 ##### std::pair<bool, std::uint64_t> del(std::string const& condition,...)
 * 参数1： 删除条件，可以为空字符串 
@@ -180,3 +183,34 @@ int main(){
    auto r0 = dao.query<std::tuple<mysql::Integer,std::string>>("select a,b from test where id=?",mysql::Integer{1});
 }
 ````
+# execute方法  
+>支持原生数据库的命令执行  
+##### bool execute(std::string const& sql)
+* 参数: 完整的sql语句
+* 返回：执行结果
+##### bool execute(std::string const& sql,...)
+* 参数: 完整的sql语句
+>如果执行的sql语句可以返回结果集合  
+* 参数2: 执行结果集的回调方法,回调参数为数据结果集的指针（可能是nullptr）  
+* 返回：执行结果
+````cpp
+#include <iostream>
+#include "mysql.hpp"
+#include "dao.hpp"
+using namespace xorm;
+int main(){
+  dao_t<mysql> dao;
+  auto r = dao.execute("commit");
+  std::function<void(MYSQL_RES*)> get_reuslt = [](MYSQL_RES*){}
+  auto r1 = dao.execute("select * from test",get_reuslt);
+}
+````
+# 开启事务  
+>提供了两种开启事务的方式
+* 自动事务开启  
+###### start_transaction()
+>在作用域结束后会自动提交当前事务
+* 手动事务开启    
+** begin()
+** rollback()
+** commit()
