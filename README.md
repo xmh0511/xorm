@@ -3,7 +3,8 @@
 
 ## 特性   
 1. 使用简单  
-2. head only,方便用于其他项目  
+2. stmt全面支持,防止注入  
+3. head only,方便用于其他项目  
 
 ## RoadMap  
 1. 增加sqlite,postgre等数据库支持  
