@@ -17,6 +17,27 @@
 #include "meta_utility.hpp"
 #include "dbconfig.hpp"
 namespace xorm {
+	namespace xorm_utils {
+
+		template<std::size_t...>
+		struct index_package {
+
+		};
+		
+		template<std::size_t Max,std::size_t...Index>
+		struct index_package<Max, Index...> {
+			using type = typename index_package<Max - 1, Max - 1, Index... >::type;
+		};
+
+		template<std::size_t...Index>
+		struct index_package<0, Index...> {
+			using type = index_package<Index...>;
+		};
+
+		template<std::size_t Max>
+		using make_index_package = typename index_package<Max>::type;
+	}
+
 	template<typename T0>
 	struct auto_params_lambda0 {
 		auto_params_lambda0(std::stringstream& ss_, int& index_, std::size_t size_, std::string& value_place_, MYSQL_BIND* bind_, T0* that) :ss(ss_), index(index_), size(size_), value_place(value_place_), bind(bind_), this_(that) {
@@ -158,16 +179,17 @@ namespace xorm {
 		using MysqlTime = TimeDate<MYSQL_TYPE_TIME>;
 	private:
 		template<typename T>
-		typename std::enable_if<is_fundamention_type<typename std::remove_reference<T>::type>::value || is_date_type<typename std::remove_reference<T>::type>::value>::type bind_value(T & t, MYSQL_BIND & bind, bool get = false) {
+		typename std::enable_if<is_fundamention_type<typename std::remove_reference<T>::type>::value || is_date_type<typename std::remove_reference<T>::type>::value, bool>::type bind_value(T & t, MYSQL_BIND & bind, bool get = false) {
 			using type = typename std::remove_reference<T>::type;
 			bind.buffer_type = type::field_type;
 			bind.buffer = t.buffer();
 			bind.is_null = t.null_buffer();
 			bind.length = 0;
 			//bind.buffer_length = 0;
+			return true;
 		}
 		template<typename T>
-		typename std::enable_if<std::is_same<typename std::remove_reference<T>::type, std::string>::value>::type bind_value(T& t, MYSQL_BIND& bind, bool get = false) {
+		typename std::enable_if<std::is_same<typename std::remove_reference<T>::type, std::string>::value,bool>::type bind_value(T& t, MYSQL_BIND& bind, bool get = false) {
 			if (get) {
 				t.resize(string_max_size_);
 			}
@@ -176,6 +198,7 @@ namespace xorm {
 			bind.is_null = 0;
 			bind.length = 0;
 			bind.buffer_length = (unsigned long)t.size();
+			return true;
 		}
 
 		template<typename T, typename U>
@@ -285,11 +308,16 @@ namespace xorm {
 			return stmt_execute(ss.str(), bind);
 		}
 
-		template<typename T>
-		typename std::enable_if<reflector::is_reflect_class<typename std::remove_reference<T>::type>::value, bool>::type del(std::string const& condition) {
+		template<typename T,typename...U>
+		typename std::enable_if<reflector::is_reflect_class<typename std::remove_reference<T>::type>::value, std::pair<bool,std::uint64_t>>::type del(std::string const& condition,U&&...args) {
+			static_assert((sizeof...(args)) != 0, "require at least one argument!!!");
 			auto meta = meta_info_reflect(T{});
-			std::string sql = "DELETE FROM " + meta.get_class_name() + " " + condition;
-			return execute(sql);
+			MYSQL_BIND bind[sizeof...(args)];
+			std::string sql = "DELETE FROM `" + meta.get_class_name() + "` " + condition;
+			auto tp = std::make_tuple(std::forward<U>(args)...);
+			expand_bind_value(bind, tp, xorm_utils::make_index_package<sizeof...(args)>{});
+			auto r = stmt_execute(sql, bind);
+			return { r.first != 0,r.first };
 		}
 
 		template<typename T>
@@ -310,21 +338,41 @@ namespace xorm {
 			return rpr.first == 2 ? true : false;
 		}
 
-		template<typename T>
-		typename std::enable_if<reflector::is_reflect_class<typename std::remove_reference<T>::type>::value, std::pair<std::uint64_t, std::uint64_t>>::type update(T&& v, std::string const& condition) {
-			auto meta = meta_info_reflect(v);
-			std::string tablename = meta.get_class_name();
-			std::stringstream ss;
-			MYSQL_BIND bind[meta.element_size()];
-			memset(bind, 0, sizeof(bind));
-			ss << "UPDATE `" << tablename << "` SET ";
-			auto size = meta.element_size();
-			int index = 0;
-			auto_params_lambda1<mysql> lambda1{ ss ,index ,size ,bind ,this };
-			reflector::each_object(std::forward<T>(v), lambda1);
-			ss << " " << condition;
-			return stmt_execute(ss.str(), bind);
+		void void_parameter_content(...) {
+
 		}
+
+		template<typename Bind,typename...T,std::size_t...Indexs>
+		void expand_bind_value(Bind&& bind,std::tuple<T...>& tp, xorm_utils::index_package<Indexs...>) {
+			void_parameter_content(bind_value(std::get<Indexs>(tp), bind[Indexs])...);
+		}
+
+		template<typename...T>
+		std::pair<bool, std::uint64_t> update(std::string const& sql,T&&...args) {
+			static_assert((sizeof...(args)) != 0, "require at least one argument!!!");
+			MYSQL_BIND bind[sizeof...(args)];
+			auto tp = std::make_tuple(std::forward<T>(args)...);
+			expand_bind_value(bind, tp, xorm_utils::make_index_package<sizeof...(args)>{});
+			auto r = stmt_execute(sql, bind);
+			return { r.first!=0,r.first };
+		}
+
+		//template<typename T>
+		//typename std::enable_if<reflector::is_reflect_class<typename std::remove_reference<T>::type>::value, std::pair<bool, std::uint64_t>>::type update(T&& v, std::string const& condition) {
+		//	auto meta = meta_info_reflect(v);
+		//	std::string tablename = meta.get_class_name();
+		//	std::stringstream ss;
+		//	MYSQL_BIND bind[meta.element_size()];
+		//	memset(bind, 0, sizeof(bind));
+		//	ss << "UPDATE `" << tablename << "` SET ";
+		//	auto size = meta.element_size();
+		//	int index = 0;
+		//	auto_params_lambda1<mysql> lambda1{ ss ,index ,size ,bind ,this };
+		//	reflector::each_object(std::forward<T>(v), lambda1);
+		//	ss << " " << condition;
+		//	auto r =  stmt_execute(ss.str(), bind);
+		//	return { r.first != 0,r.first };
+		//}
 
 		template<typename T>
 		typename std::enable_if<reflector::is_reflect_class<typename std::remove_reference<T>::type>::value, std::pair<bool, std::vector<T>>>::type query(std::string const& condition = "") {
@@ -437,6 +485,10 @@ namespace xorm {
 			return r;
 		}
 
+		std::uint64_t get_affected_rows() {
+			return mysql_affected_rows(conn_);
+		}
+
 		bool begin() {
 			return execute("BEGIN");
 		}
@@ -477,6 +529,7 @@ namespace xorm {
 								}
 								return { rows,0 };
 							}
+							return { 0 ,0 };
 						}
 					}
 				}

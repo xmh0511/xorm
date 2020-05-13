@@ -3,6 +3,8 @@
 #include <atomic>
 #include <utility>
 #include "dbconfig.hpp"
+#include "reflect/reflector.hpp"
+
 namespace xorm {
 
 	class dao_message {
@@ -80,15 +82,15 @@ namespace xorm {
 			}
 			return conn_->insert(std::forward<T>(t));
 		}
-		template<typename T>
-		bool del(std::string const& condition) {
+		template<typename T,typename...U>
+		std::pair<bool, std::uint64_t> del(std::string const& condition,U&&...args) {
 			if (!conn_->is_connect()) {
-				return false;
+				return {false,0};
 			}
-			return conn_->template del<T>(condition);
+			return conn_->template del<T>(condition,std::forward<U>(args)...);
 		}
 
-		template<typename T>
+		template<typename T,typename  = typename std::enable_if<reflector::is_reflect_class<typename std::remove_reference<T>::type>::value>::type>
 		bool update(T&& v) {
 			if (!conn_->is_connect()) {
 				return false ;
@@ -96,12 +98,12 @@ namespace xorm {
 			return conn_->update(std::forward<T>(v));
 		}
 
-		template<typename T>
-		std::pair<std::int64_t, std::int64_t> update(T&& v, std::string const& condition) {
+		template<typename...T>
+		std::pair<bool, std::uint64_t> update(std::string const& condition,T&&...args) {
 			if (!conn_->is_connect()) {
-				return {0,0};
+				return {false,0};
 			}
-			return conn_->update(std::forward<T>(v), condition);
+			return conn_->update(condition,std::forward<T>(args)...);
 		}
 
 		template<typename T>
@@ -133,6 +135,10 @@ namespace xorm {
 		template<typename T>
 		bool execute(std::string const& sql,std::function<void(T)> const& callback) {
 			return conn_->execute(sql, callback);
+		}
+
+		std::uint64_t get_affected_rows() {
+			return conn_->get_affected_rows();
 		}
 
 		void start_transaction() {

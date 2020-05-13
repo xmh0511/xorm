@@ -21,7 +21,9 @@ int main() {
 	config.user = "root";
 	init_database_config(config);
 
-
+	dao_message::get().set_error_callback([](std::string const& msg) {
+		std::cout << msg << "\n";
+	});
 	auto t0 = std::thread([]() {
 		for (auto i = 0; i < 5; i++) {
 			dao_t<mysql> dao;
@@ -90,8 +92,8 @@ int main() {
 		std::cout << r.first << "  " << r.second.size() << std::endl;
 		if (!r.second.empty()) {
 			auto& info = r.second[0];
-			auto rr = dao_query.update(info,"where id=1");
-			std::cout << rr.first << std::endl;
+			auto rr = dao_query.update(info);
+			std::cout << rr << std::endl;
 		}
 	}
 	t0.join();
@@ -100,10 +102,7 @@ int main() {
 	t3.join();
 
 	dao_t<mysql> dao_query;
-	std::function<void(MYSQL_RES*)> f = [](MYSQL_RES* result) {
-		std::cout << result->row_count << "\n";
-	};
-	dao_query.execute("select* from test", f);
-	std::cout << "end" << std::endl;
+	auto r0 = dao_query.update("update test set a=? where a=?", mysql::Integer{ 2048 }, mysql::Integer{ 1024 });
+	auto r = dao_query.del<test>("where id=?", mysql::Integer{1});
 	std::cin.get();
 }
