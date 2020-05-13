@@ -175,6 +175,6 @@ REFLECTION(test, id, a, b, time, date, tm, money)
 int main(){
    dao_t<mysql> dao;
    auto r = dao.query<test>("where id=?",mysql::Integer{1});
-   auto r0 = dao.query<test>("select a from test where id=?",mysql::Integer{1});
+   auto r0 = dao.query<std::tuple<mysql::Integer,std::string>>("select a,b from test where id=?",mysql::Integer{1});
 }
 ````
