@@ -76,9 +76,9 @@ namespace xorm {
 		  second: insert data's id(key)
 		*/
 		template<typename T> 
-		std::pair<std::int64_t, std::int64_t> insert(T&& t) {
+		std::pair<bool, std::int64_t> insert(T&& t) {
 			if (!conn_->is_connect()) {
-				return {0,0};
+				return {false,0};
 			}
 			return conn_->insert(std::forward<T>(t));
 		}

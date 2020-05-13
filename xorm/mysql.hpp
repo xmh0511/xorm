@@ -292,7 +292,7 @@ namespace xorm {
 		}
 	public:
 		template<typename T>
-		typename std::enable_if<reflector::is_reflect_class<typename std::remove_reference<T>::type>::value, std::pair<std::int64_t, std::int64_t>>::type insert(T&& t) {
+		typename std::enable_if<reflector::is_reflect_class<typename std::remove_reference<T>::type>::value, std::pair<bool, std::int64_t>>::type insert(T&& t) {
 			auto meta = meta_info_reflect(t);
 			std::string tablename = meta.get_class_name();
 			std::stringstream ss;
@@ -305,7 +305,8 @@ namespace xorm {
 			auto_params_lambda0<mysql> lambda{ ss ,index ,size ,value_place ,bind,this };
 			reflector::each_object(std::forward<T>(t), lambda);
 			ss << ")" << " VALUES(" << value_place << ")";
-			return stmt_execute(ss.str(), bind);
+			auto r = stmt_execute(ss.str(), bind);
+			return { r.first != 0,r.second };
 		}
 
 		template<typename T,typename...U>
