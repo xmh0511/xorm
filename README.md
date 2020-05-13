@@ -209,8 +209,28 @@ int main(){
 >提供了两种开启事务的方式
 * 自动事务开启  
 ###### start_transaction()
->在作用域结束后会自动提交当前事务
+>在声明的dao_t对象声明周期结束后会自动提交当前事务
 * 手动事务开启    
-** begin()
-** rollback()
-** commit()
+###### begin()
+###### rollback()
+###### commit()  
+````cpp
+#include <iostream>
+#include "mysql.hpp"
+#include "dao.hpp"
+using namespace xorm;
+int main(){
+   {
+      dao_t<mysql> dao;
+      dao.start_transaction();
+      //////
+   }
+    dao_t<mysql> dao;
+    dao.begin();
+    ///balabala
+    if(///balabala){
+      dao.rollback();
+    }
+    dao.commit();
+}
+````
