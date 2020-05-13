@@ -1,8 +1,7 @@
 # xorm
 基于c++11 标准的orm  
 
-## 特性  
-
+## 特性   
 1. 使用简单  
 2. head only,方便用于其他项目  
 
@@ -10,34 +9,34 @@
 1. 增加sqlite,postgre等数据库支持  
 
 
-### 实例  
+###  使用方式    
 #### 初始化配置
+>在使用之前需要进行数据库配置,配置参数如下
+* host 用来指定连接的地址
+* user 数据库用户名
+* password 数据库密码
+* dbname 数据库名
+* conn_number 连接池数量  
+##### 非必填参数    
+* character_encoding 数据库编码方式 
+* port  数据库端口号
+* reconnect_number 尝试重连次数
+* timeout 超时时间
 ````
 #include <iostream>
 #include "mysql.hpp"
 #include "dao.hpp"
 using namespace xorm;
 
-struct test {
-	mysql::Integer id;
-	mysql::Integer a;
-	std::string b;
-	mysql::MysqlDateTime time;
-	mysql::MysqlDate date;
-	mysql::MysqlTime tm;
-};
-REFLECTION(test, id, a, b, time, date, tm)
-
 int main(){
-
-        init_database_config({ "127.0.0.1","root","root","xorm",3306,2 }); //全局初始化配置
-	test data;
-	data.id = 0;
-	data.a = i;
-	data.b = "hello,world";
-	data.time = "2019-10-25 18:05:01";
-	data.date = "2019-10-09";
-	data.tm = "18:19:01";
+        dataBaseConfig config;
+	config.character_encoding = "utf8";
+	config.conn_number = 2;
+	config.dbname = "xorm";
+	config.host = "127.0.0.1";
+	config.password = "root";
+	config.user = "root";
+        init_database_config(config); //全局初始化配置
 }
 ````
 ####  新增数据
