@@ -52,7 +52,7 @@ int main(){
 >通过dao_t<DataBase>::insert 进行数据的添加  
 ##### std::pair<std::int64_t, std::int64_t> insert(T&& t)
 * 参数： 通过REFLECTION注册过的表结构对象  
-* 返回类型： 影响的row数量和插入数据的id  
+* 返回类型： 是否成功和插入成功后此条数据的id  
 ````
 #include <iostream>
 #include "mysql.hpp"
