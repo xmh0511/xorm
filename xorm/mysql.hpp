@@ -421,6 +421,22 @@ namespace xorm {
 			}
 			return r;
 		}
+
+		bool execute(std::string const& sql, std::function<void(MYSQL_RES*)> const& data_callback) {
+			auto iRet = mysql_query(conn_, sql.c_str());
+			bool r = iRet != 0 ? false : true;
+			if (r) {
+				auto pRes = mysql_store_result(conn_);
+				data_callback(pRes);
+				mysql_free_result(pRes);
+			}
+			else {
+				data_callback(nullptr);
+				trigger_error(mysql_error(conn_));
+			}
+			return r;
+		}
+
 		bool begin() {
 			return execute("BEGIN");
 		}

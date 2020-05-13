@@ -98,6 +98,12 @@ int main() {
 	t1.join();
 	t2.join();
 	t3.join();
+
+	dao_t<mysql> dao_query;
+	std::function<void(MYSQL_RES*)> f = [](MYSQL_RES* result) {
+		std::cout << result->row_count << "\n";
+	};
+	dao_query.execute("select* from test", f);
 	std::cout << "end" << std::endl;
 	std::cin.get();
 }

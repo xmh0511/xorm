@@ -130,6 +130,11 @@ namespace xorm {
 			return conn_->execute(sql);
 		}
 
+		template<typename T>
+		bool execute(std::string const& sql,std::function<void(T)> const& callback) {
+			return conn_->execute(sql, callback);
+		}
+
 		void start_transaction() {
 			begin();
 			start_transaction_ = true;
