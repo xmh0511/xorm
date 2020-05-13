@@ -102,7 +102,10 @@ int main() {
 	t3.join();
 
 	dao_t<mysql> dao_query;
-	auto r0 = dao_query.update("update test set a=? where a=?", mysql::Integer{ 2048 }, mysql::Integer{ 1024 });
-	auto r = dao_query.del<test>("where id=?", mysql::Integer{1});
+	auto r0 = dao_query.update("update test set a=? where a=?", mysql::Integer{ 2048 }, mysql::Integer{ 0 });
+	auto r1 = dao_query.del<test>("where id=?", mysql::Integer{1});
+	auto r2 = dao_query.query<test>(" where a=?", mysql::Integer{ 0 });
+	auto r3 = dao_query.query<test>("");
+	auto r4 = dao_query.query<std::tuple<mysql::Integer>>("select a from test where id=?", mysql::Integer{ 465 });
 	std::cin.get();
 }

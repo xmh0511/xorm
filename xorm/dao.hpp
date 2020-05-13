@@ -106,13 +106,22 @@ namespace xorm {
 			return conn_->update(condition,std::forward<T>(args)...);
 		}
 
-		template<typename T>
-		std::pair<bool, std::vector<T>> query(std::string const& condition = "") {
+		//template<typename T>
+		//std::pair<bool, std::vector<T>> query(std::string const& condition = "") {
+		//	if (!conn_->is_connect()) {
+		//		return { false,{} };
+		//	}
+		//	return conn_->template query<T>(condition);
+		//}
+
+		template<typename T,typename...Params>
+		std::pair<bool, std::vector<T>> query(std::string const& condition, Params&&...params) {
 			if (!conn_->is_connect()) {
 				return { false,{} };
 			}
-			return conn_->template query<T>(condition);
+			return conn_->template query<T>(condition,std::forward<Params>(params)...);
 		}
+
 		bool begin() {
 			return conn_->begin();
 		}

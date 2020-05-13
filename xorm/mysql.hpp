@@ -347,6 +347,11 @@ namespace xorm {
 			void_parameter_content(bind_value(std::get<Indexs>(tp), bind[Indexs])...);
 		}
 
+		template<typename Bind, std::size_t...Indexs>
+		void expand_bind_value(Bind&& bind, std::tuple<>& tp, xorm_utils::index_package<Indexs...>) {
+
+		}
+
 		template<typename...T>
 		std::pair<bool, std::uint64_t> update(std::string const& sql,T&&...args) {
 			static_assert((sizeof...(args)) != 0, "require at least one argument!!!");
@@ -374,12 +379,15 @@ namespace xorm {
 		//	return { r.first != 0,r.first };
 		//}
 
-		template<typename T>
-		typename std::enable_if<reflector::is_reflect_class<typename std::remove_reference<T>::type>::value, std::pair<bool, std::vector<T>>>::type query(std::string const& condition = "") {
+		template<typename T,typename...Params>
+		typename std::enable_if<reflector::is_reflect_class<typename std::remove_reference<T>::type>::value, std::pair<bool, std::vector<T>>>::type query(std::string const& condition , Params&&...params) {
 			auto meta = meta_info_reflect(T{});
 			std::string tablename = meta.get_class_name();
 			std::stringstream ss;
 			MYSQL_BIND bind[meta.element_size()];
+			MYSQL_BIND bind_params[sizeof...(params) + 1];  //0 will ill-formed
+			auto tp = std::make_tuple(std::forward<Params>(params)...);
+			expand_bind_value(bind_params, tp, xorm_utils::make_index_package<sizeof...(params)>{});
 			memset(bind, 0, sizeof(bind));
 			auto name_arr = meta.get_element_names();
 			ss << "SELECT ";
@@ -398,6 +406,10 @@ namespace xorm {
 				auto sqlStr = ss.str();
 				int iRet = mysql_stmt_prepare(pStmt, sqlStr.c_str(), (unsigned long)sqlStr.size());
 				if (iRet == 0) {
+					iRet = mysql_stmt_bind_param(pStmt, bind_params);
+					if (iRet != 0) {
+						return { false,result };
+					}
 					T tmp{};
 					int index = 0;
 					auto_params_lambda2<mysql> lambda{ index ,bind ,this };
@@ -422,10 +434,13 @@ namespace xorm {
 			return { false,result };
 		}
 
-		template<typename T>
-		typename std::enable_if<xorm::is_tuple_type<T>::value, std::pair<bool, std::vector<T>>>::type query(std::string const& sqlStr) {
+		template<typename T, typename...Params>
+		typename std::enable_if<xorm::is_tuple_type<T>::value, std::pair<bool, std::vector<T>>>::type query(std::string const& sqlStr ,Params&& ...params) {
 			constexpr std::size_t tuple_size = std::tuple_size<T>::value;
 			MYSQL_BIND bind[tuple_size];
+			MYSQL_BIND bind_params[sizeof...(params) + 1];  //0 will ill-formed
+			auto tp = std::make_tuple(std::forward<Params>(params)...);
+			expand_bind_value(bind_params, tp, xorm_utils::make_index_package<sizeof...(params)>{});
 			memset(bind, 0, sizeof(bind));
 			MYSQL_STMT* pStmt = mysql_stmt_init(conn_);
 			stmt_guard<MYSQL_STMT> guard(pStmt);
@@ -433,6 +448,10 @@ namespace xorm {
 			if (pStmt != nullptr) {
 				int iRet = mysql_stmt_prepare(pStmt, sqlStr.c_str(), (unsigned long)sqlStr.size());
 				if (iRet == 0) {
+					iRet = mysql_stmt_bind_param(pStmt, bind_params);
+					if (iRet != 0) {
+						return { false,result };
+					}
 					T tmp{};
 					int index = 0;
 					auto_params_lambda4<mysql> lambda4{ index ,bind,this };
@@ -520,7 +539,7 @@ namespace xorm {
 							if (rows != 0) {
 								//bool cr = commit();
 								auto pr = query<std::tuple<mysql::Integer>>("SELECT LAST_INSERT_ID();");
-								if (/*cr && */pr.first) {
+								if (pr.first) {
 									auto& id_arr = pr.second;
 									if (!id_arr.empty()) {
 										auto id = std::get<0>((id_arr[0]));
