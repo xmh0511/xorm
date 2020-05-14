@@ -163,10 +163,10 @@ namespace xorm {
 		}
 
 		template<typename T>
-		typename std::enable_if<!is_sqlitefundametion_type<typename std::remove_reference<T>::type>::value&& std::is_same<typename std::remove_reference<T>::type::value_type, std::string>::value, int>::type bind_value(sqlite3_stmt* stmt, T&& v, std::size_t index, bool get = false) {
+		typename std::enable_if<!is_sqlitefundametion_type<typename std::remove_reference<T>::type>::value&& std::is_same<typename std::remove_reference<T>::type, std::string>::value, int>::type bind_value(sqlite3_stmt* stmt, T&& v, std::size_t index, bool get = false) {
 			if (get) {
 				auto size = (std::size_t)sqlite3_column_bytes(stmt, (int)index);
-				v = std::string(sqlite3_column_text(stmt, (int)index), size);
+				v = std::string((char*)sqlite3_column_text(stmt, (int)index), size);
 				return 0;
 			}
 			return sqlite3_bind_text(stmt, (int)index, v.data(),(int)v.size(),nullptr);
