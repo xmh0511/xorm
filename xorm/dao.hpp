@@ -2,8 +2,10 @@
 #include "simple_pool.hpp"
 #include <atomic>
 #include <utility>
+#include <functional>
 #include "dbconfig.hpp"
 #include "reflect/reflector.hpp"
+#include <iostream>
 
 namespace xorm {
 

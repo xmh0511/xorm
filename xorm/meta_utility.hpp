@@ -40,4 +40,25 @@ namespace xorm {
 		}
 	};
 
+	namespace xorm_utils {
+
+		template<std::size_t...>
+		struct index_package {
+
+		};
+
+		template<std::size_t Max, std::size_t...Index>
+		struct index_package<Max, Index...> {
+			using type = typename index_package<Max - 1, Max - 1, Index... >::type;
+		};
+
+		template<std::size_t...Index>
+		struct index_package<0, Index...> {
+			using type = index_package<Index...>;
+		};
+
+		template<std::size_t Max>
+		using make_index_package = typename index_package<Max>::type;
+	}
+
 }
