@@ -297,7 +297,7 @@ namespace xorm {
 			ss << ")" << " VALUES(" << value_place << ")";
 			auto sqlStr = ss.str();
 			auto r =  stmt_execute_with_obj(sqlStr, std::forward<T>(obj), meta.get_element_meta_protype());
-			return r.second!=0;
+			return r.first;
 		}
 
 		template<typename...Params>
@@ -366,7 +366,8 @@ namespace xorm {
 				if (result == SQLITE_OK) {
 					result = sqlite3_step(stmt);
 					if (result == SQLITE_DONE) {
-						return {true,get_affected_rows()};
+						auto effect_rows = get_affected_rows();
+						return { effect_rows!=0,effect_rows };
 					}
 				}
 			}
@@ -383,7 +384,7 @@ namespace xorm {
 				if (result == SQLITE_OK) {
 					result = sqlite3_step(stmt);
 					if (result == SQLITE_DONE) {
-						return { true,sqlite3_last_insert_rowid(sqlite_handler_)};
+						return { get_affected_rows()!=0,sqlite3_last_insert_rowid(sqlite_handler_)};
 					}
 				}
 			}
