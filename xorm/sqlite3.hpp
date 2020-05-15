@@ -237,6 +237,11 @@ namespace xorm {
 		bool connect(dataBaseConfig const& config) {
 			auto r = sqlite3_open(config.host.c_str(), &sqlite_handler_);
 			if (r == SQLITE_OK) {  //表示连接成功
+#ifdef SQLITE_HAS_CODEC
+				if (!config.password.empty()) {
+					sqlite3_key(sqlite_handler_, config.password.c_str(), (int)config.password.size());
+				}
+#endif
 				is_connect_ = true;
 				return true;
 			}
