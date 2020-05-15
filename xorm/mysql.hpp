@@ -520,15 +520,8 @@ namespace xorm {
 							auto rows = mysql_stmt_affected_rows(pStmt);
 							if (rows != 0) {
 								//bool cr = commit();
-								auto pr = query<std::tuple<mysql::Integer>>("SELECT LAST_INSERT_ID();");
-								if (pr.first) {
-									auto& id_arr = pr.second;
-									if (!id_arr.empty()) {
-										auto id = std::get<0>((id_arr[0]));
-										return { rows ,id.value() };
-									}
-								}
-								return { rows,0 };
+								auto key_id = mysql_insert_id(conn_);
+								return { rows,key_id };
 							}
 							return { 0 ,0 };
 						}
