@@ -177,15 +177,21 @@ namespace xorm {
 			bind.buffer_type = MYSQL_TYPE_STRING;
 			bind.buffer = &(t[0]);
 			bind.is_null = 0;
-			bind.length = 0;
+			bind.length = &string_type_size_;
 			bind.buffer_length = (unsigned long)t.size();
 			return true;
 		}
 
 		template<typename T, typename U>
 		typename std::enable_if<std::is_same<typename std::remove_reference<T>::type, std::string>::value>::type clear_field(T& t, U& v) {
-			v = std::move(std::string(&t[0], strlen(t.data())));
-			//memset(&t[0], 0, t.size()); no use optimized
+			if (string_type_size_ != 0) {
+				v = std::string(&t[0], string_type_size_);
+			}
+			else {
+				v = std::string();
+			}
+			string_type_size_ = 0;
+			//memset(&t[0], 0, t.size()); no use, optimized by string_type_size_
 		}
 
 		template<typename T, typename U>
@@ -548,6 +554,7 @@ namespace xorm {
 		bool is_connect_ = false;
 		std::size_t string_max_size_ = 1024 * 1024;
 		std::function<void(std::string const&)> error_callback_;
+		unsigned long string_type_size_ = 0;
 	};
 }
 #endif // ENABLE_MYSQL

@@ -127,6 +127,7 @@ int main() {
 	auto r3 = dao_query.query<test>("");
 	auto r4 = dao_query.query<std::tuple<mysql::Integer>>("select a from test where id=?", mysql::Integer{ 2 });
 	auto rrr = dao_query.del<test>("");
+
 #endif 
 
 #ifdef  XORM_ENABLE_SQLITE
