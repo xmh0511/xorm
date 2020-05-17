@@ -400,6 +400,7 @@ namespace xorm {
 					}
 					T tmp{};
 					int index = 0;
+					string_type_size_ = 0;
 					auto_params_lambda2<mysql> lambda{ index ,bind ,this };
 					reflector::each_object(tmp, lambda);
 					bool r = mysql_stmt_bind_result(pStmt, bind);
@@ -442,6 +443,7 @@ namespace xorm {
 					}
 					T tmp{};
 					int index = 0;
+					string_type_size_ = 0;
 					auto_params_lambda4<mysql> lambda4{ index ,bind,this };
 					each_tuple<0, tuple_size>::each(tmp, lambda4);
 					bool r = mysql_stmt_bind_result(pStmt, bind);
