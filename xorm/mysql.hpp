@@ -88,10 +88,11 @@ namespace xorm {
 		}
 		template<typename T, typename U, typename Y>
 		void operator()(T&& obj, U&& name, Y&& field) {
-			this_->clear_field((obj.*field), (copy_v.*field));
+			this_->clear_field((obj.*field), (copy_v.*field), index_);
 		}
 		T0* this_;
 		Object& copy_v;
+		std::size_t index_ = 0;
 	};
 	template<typename T0>
 	struct auto_params_lambda4 {
@@ -114,10 +115,11 @@ namespace xorm {
 		}
 		template<typename T, typename U>
 		void operator()(T& v, U& u) {
-			this_->clear_field(v, u);
+			this_->clear_field(v, u, index_);
 		}
 		MYSQL_BIND* bind;
 		T0* this_;
+		std::size_t index_ = 0;
 	};
 	template<typename T>
 	class stmt_guard {
@@ -134,6 +136,17 @@ namespace xorm {
 		}
 	private:
 		T* resource_ = nullptr;
+	};
+	class string_size_vec_clear {
+	public:
+		string_size_vec_clear(std::vector<unsigned long>& vec):vec_(vec){
+			vec_.clear();
+		}
+		~string_size_vec_clear() {
+			vec_.clear();
+		}
+	private:
+		std::vector<unsigned long>& vec_;
 	};
 	class mysql final {
 		template<typename T0>
@@ -172,30 +185,37 @@ namespace xorm {
 		template<typename T>
 		typename std::enable_if<std::is_same<typename std::remove_reference<T>::type, std::string>::value,bool>::type bind_value(T& t, MYSQL_BIND& bind, bool get = false) {
 			if (get) {
+				record_string_size_.push_back(0);
+				auto& data = record_string_size_.back();
+				bind.length = &data;
 				t.resize(string_max_size_);
+			}
+			else {
+				bind.length = nullptr;
 			}
 			bind.buffer_type = MYSQL_TYPE_STRING;
 			bind.buffer = &(t[0]);
 			bind.is_null = 0;
-			bind.length = &string_type_size_;
 			bind.buffer_length = (unsigned long)t.size();
 			return true;
 		}
 
 		template<typename T, typename U>
-		typename std::enable_if<std::is_same<typename std::remove_reference<T>::type, std::string>::value>::type clear_field(T& t, U& v) {
-			if (string_type_size_ != 0) {
-				v = std::string(&t[0], string_type_size_);
+		typename std::enable_if<std::is_same<typename std::remove_reference<T>::type, std::string>::value>::type clear_field(T& t, U& v,std::size_t& index) {
+			auto& size = record_string_size_[index];
+			index++;
+			if (size != 0) {
+				v = std::string(&t[0], size);
 			}
 			else {
 				v = std::string();
 			}
-			string_type_size_ = 0;
-			//memset(&t[0], 0, t.size()); no use, optimized by string_type_size_
+			size = 0;
+			//memset(&t[0], 0, t.size()); no use, optimized by record_string_size_
 		}
 
 		template<typename T, typename U>
-		typename std::enable_if<!std::is_same<typename std::remove_reference<T>::type, std::string>::value>::type clear_field(T& t, U& v) {
+		typename std::enable_if<!std::is_same<typename std::remove_reference<T>::type, std::string>::value>::type clear_field(T& t, U& v, std::size_t& index) {
 			v = t;
 			t.clear();
 		}
@@ -298,9 +318,9 @@ namespace xorm {
 
 		template<typename T,typename...U>
 		typename std::enable_if<reflector::is_reflect_class<typename std::remove_reference<T>::type>::value, std::pair<bool,std::uint64_t>>::type del(std::string const& condition,U&&...args) {
-			static_assert((sizeof...(args)) != 0, "require at least one argument!!!");
+			//static_assert((sizeof...(args)) != 0, "require at least one argument!!!");
 			auto meta = meta_info_reflect(T{});
-			MYSQL_BIND bind[sizeof...(args)];
+			MYSQL_BIND bind[sizeof...(args)+1];  //0 argument will be ill-formed
 			std::string sql = "DELETE FROM `" + meta.get_class_name() + "` " + condition;
 			auto tp = std::make_tuple(std::forward<U>(args)...);
 			expand_bind_value(bind, tp, xorm_utils::make_index_package<sizeof...(args)>{});
@@ -389,6 +409,8 @@ namespace xorm {
 			ss << " FROM `" << tablename << "` " << condition;
 			MYSQL_STMT* pStmt = mysql_stmt_init(conn_);
 			stmt_guard<MYSQL_STMT> guard(pStmt);
+			string_size_vec_clear string_guard{ record_string_size_ };
+			record_string_size_.reserve(meta.element_size()*2);
 			std::vector<T> result;
 			if (pStmt != nullptr) {
 				auto sqlStr = ss.str();
@@ -400,7 +422,6 @@ namespace xorm {
 					}
 					T tmp{};
 					int index = 0;
-					string_type_size_ = 0;
 					auto_params_lambda2<mysql> lambda{ index ,bind ,this };
 					reflector::each_object(tmp, lambda);
 					bool r = mysql_stmt_bind_result(pStmt, bind);
@@ -433,6 +454,8 @@ namespace xorm {
 			memset(bind, 0, sizeof(bind));
 			MYSQL_STMT* pStmt = mysql_stmt_init(conn_);
 			stmt_guard<MYSQL_STMT> guard(pStmt);
+			string_size_vec_clear string_guard{ record_string_size_ };
+			record_string_size_.reserve(tuple_size*2);
 			std::vector<T> result;
 			if (pStmt != nullptr) {
 				int iRet = mysql_stmt_prepare(pStmt, sqlStr.c_str(), (unsigned long)sqlStr.size());
@@ -443,7 +466,6 @@ namespace xorm {
 					}
 					T tmp{};
 					int index = 0;
-					string_type_size_ = 0;
 					auto_params_lambda4<mysql> lambda4{ index ,bind,this };
 					each_tuple<0, tuple_size>::each(tmp, lambda4);
 					bool r = mysql_stmt_bind_result(pStmt, bind);
@@ -556,7 +578,7 @@ namespace xorm {
 		bool is_connect_ = false;
 		std::size_t string_max_size_ = 1024 * 1024;
 		std::function<void(std::string const&)> error_callback_;
-		unsigned long string_type_size_ = 0;
+		std::vector<unsigned long> record_string_size_;
 	};
 }
 #endif // ENABLE_MYSQL

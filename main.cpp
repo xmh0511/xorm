@@ -11,8 +11,9 @@ struct test {
 	mysql::MysqlDate date;
 	mysql::MysqlTime tm;
 	mysql::Double money;
+	std::string d;
 };
-REFLECTION(test, id, a, b, time, date, tm, money)
+REFLECTION(test, id, a, b, time, date, tm, money,d)
 #endif 
 
 
@@ -121,12 +122,21 @@ int main() {
 	auto r0 = dao_query.update("update test set a=? where a=?", mysql::Integer{ 2048 }, mysql::Integer{ 0 });
 	auto r1 = dao_query.del<test>("where id=?", mysql::Integer{1});
 	auto r2 = dao_query.query<test>(" where id=?", mysql::Integer{ 2 });
-	auto& info = r2.second[0];
-	info.a = 6666;
-	auto r5 = dao_query.update(info);
+	if (!r2.second.empty()) {
+		auto& info = r2.second[0];
+		info.a = 6666;
+		auto r5 = dao_query.update(info);
+	}
 	auto r3 = dao_query.query<test>("");
 	auto r4 = dao_query.query<std::tuple<mysql::Integer>>("select a from test where id=?", mysql::Integer{ 2 });
 	auto rrr = dao_query.del<test>("");
+
+	//dao_t<mysql> dao_query;
+	//auto r = dao_query.query<std::tuple<mysql::Integer,std::string, std::string>>("select id, b,d from test");
+	//int c = 0;
+
+	//auto r0 = dao_query.query<test>("");
+	//int d = 0;
 
 #endif 
 
