@@ -5,9 +5,10 @@
 1. 使用简单  
 2. stmt全面支持,防止注入  
 3. head only,方便用于其他项目  
+4. 支持mysql,sqlite3  
 
 ## RoadMap  
-1. 增加sqlite,postgre等数据库支持  
+1. 增加postgre等数据库支持  
 
 # 目录
 * [xorm配置](#初始化配置)
