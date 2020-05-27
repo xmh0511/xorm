@@ -362,8 +362,8 @@ namespace xorm {
 
 		template<typename...T>
 		std::pair<bool, std::uint64_t> update(std::string const& sql,T&&...args) {
-			static_assert((sizeof...(args)) != 0, "require at least one argument!!!");
-			MYSQL_BIND bind[sizeof...(args)];
+			//static_assert((sizeof...(args)) != 0, "require at least one argument!!!");
+			MYSQL_BIND bind[sizeof...(args)+1];  //0 argument will be ill-formed
 			auto tp = std::make_tuple(std::forward<T>(args)...);
 			expand_bind_value(bind, tp, xorm_utils::make_index_package<sizeof...(args)>{});
 			auto r = stmt_execute(sql, bind);

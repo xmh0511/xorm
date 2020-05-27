@@ -41,6 +41,7 @@ int main() {
 	dao_message::get().set_error_callback([](std::string const& msg) {
 		std::cout << msg << "\n";
 	});
+
 	auto t0 = std::thread([]() {
 		for (auto i = 0; i < 5; i++) {
 			dao_t<mysql> dao;
