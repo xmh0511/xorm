@@ -107,11 +107,11 @@ int main() {
 		dao_t<mysql> dao_query;
 		dao_query.start_transaction();
 		auto r = dao_query.query<test>(" for update");
-		std::cout << r.first << "  " << r.second.size() << std::endl;
-		if (!r.second.empty()) {
-			auto& info = r.second[0];
+		std::cout << r.success << "  " << r.results.size() << std::endl;
+		if (!r.results.empty()) {
+			auto& info = r.results[0];
 			auto rr = dao_query.update(info);
-			std::cout << rr << std::endl;
+			std::cout << rr.affect_rows << std::endl;
 		}
 	}
 	t0.join();
@@ -123,8 +123,8 @@ int main() {
 	auto r0 = dao_query.update("update test set a=? where a=?", mysql::Integer{ 2048 }, mysql::Integer{ 0 });
 	auto r1 = dao_query.del<test>("where id=?", mysql::Integer{1});
 	auto r2 = dao_query.query<test>(" where id=?", mysql::Integer{ 2 });
-	if (!r2.second.empty()) {
-		auto& info = r2.second[0];
+	if (!r2.results.empty()) {
+		auto& info = r2.results[0];
 		info.a = 6666;
 		auto r5 = dao_query.update(info);
 	}

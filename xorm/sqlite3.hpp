@@ -12,6 +12,7 @@
 #include "reflect/reflector.hpp"
 #include "dbconfig.hpp"
 #include "meta_utility.hpp"
+#include "db_utils.hpp"
 namespace xorm {
 
 	template<typename Type>
@@ -266,7 +267,7 @@ namespace xorm {
 		}
 	public:
 		template<typename T,typename  = std::enable_if<reflector::is_reflect_class<typename std::remove_reference<T>::type>::value>>
-		std::pair<bool, std::uint64_t> insert(T&& obj) {
+		db_result<void> insert(T&& obj) {
 			auto meta = meta_info_reflect(obj);
 			std::string tablename = meta.get_class_name();
 			std::stringstream ss;
@@ -282,7 +283,7 @@ namespace xorm {
 			return stmt_execute_with_obj(sqlStr, std::forward<T>(obj), meta.get_element_meta_protype());
 		}
 		template<typename T, typename = std::enable_if<reflector::is_reflect_class<typename std::remove_reference<T>::type>::value>,typename...Params>
-		std::pair<bool, std::uint64_t> del(std::string const& condition, Params&&...params) {
+		db_result<void> del(std::string const& condition, Params&&...params) {
 			auto meta = meta_info_reflect(T{});
 			std::stringstream ss;
 			ss << "DELETE FROM '" << meta.get_class_name() << "' "<< condition;
@@ -290,7 +291,7 @@ namespace xorm {
 		}
 
 		template<typename T, typename = std::enable_if<reflector::is_reflect_class<typename std::remove_reference<T>::type>::value>>
-		bool update(T&& obj) {
+		db_result<void> update(T&& obj) {
 			auto meta = meta_info_reflect(obj);
 			std::stringstream ss;
 			ss << "replace into '" << meta.get_class_name() << "' (";
@@ -301,17 +302,16 @@ namespace xorm {
 			reflector::each_object(std::forward<T>(obj), lambda);
 			ss << ")" << " VALUES(" << value_place << ")";
 			auto sqlStr = ss.str();
-			auto r =  stmt_execute_with_obj(sqlStr, std::forward<T>(obj), meta.get_element_meta_protype());
-			return r.first;
+			return  stmt_execute_with_obj(sqlStr, std::forward<T>(obj), meta.get_element_meta_protype());
 		}
 
 		template<typename...Params>
-		std::pair<bool, std::uint64_t> update(std::string const& sqlStr ,Params&& ...params) {
+		db_result<void> update(std::string const& sqlStr ,Params&& ...params) {
 			return stmt_execute(sqlStr, std::forward<Params>(params)...);
 		}
 
 		template<typename T, typename...Params>
-		typename std::enable_if <reflector::is_reflect_class<T>::value, std::pair<bool, std::vector<T>>>::type query(std::string const& condition, Params&& ...params) {
+		typename std::enable_if <reflector::is_reflect_class<T>::value, db_result<T>>::type query(std::string const& condition, Params&& ...params) {
 			auto meta = meta_info_reflect(T{});
 			std::stringstream ss;
 			ss << "SELECT ";
@@ -324,18 +324,25 @@ namespace xorm {
 		}
 
 		template<typename Type,typename...Params>
-		typename std::enable_if<(!reflector::is_reflect_class<Type>::value && is_tuple_type<Type>::value), std::pair<bool, std::vector<Type>> >::type query(std::string const& sqlStr, Params&& ...params) {
+		typename std::enable_if<(!reflector::is_reflect_class<Type>::value && is_tuple_type<Type>::value), db_result<Type> >::type query(std::string const& sqlStr, Params&& ...params) {
 			return get_tuple_stmt_execute<Type>(sqlStr, std::forward<Params>(params)...);
 		}
 
-		bool execute(const std::string& sql) {
+		db_result<void> execute(const std::string& sql) {
+			db_result<void> dbresult;
 			if (sqlite3_exec(sqlite_handler_, sql.data(), nullptr, nullptr, nullptr) != SQLITE_OK) {
-				trigger_error(sqlite3_errmsg(sqlite_handler_));
-				return false;
+				std::string message = sqlite3_errmsg(sqlite_handler_);
+				trigger_error(message);
+				dbresult.success = false;
+				dbresult.error.is_error_ = true;
+				dbresult.error.message_ = message;
+				return dbresult;
 			}
-			return true;
+			dbresult.success = true;
+			return dbresult;
 		}
-		bool execute(std::string const& sql, std::function<void(SQLITE_RES*)> const& data_callback) {
+		db_result<void> execute(std::string const& sql, std::function<void(SQLITE_RES*)> const& data_callback) {
+			db_result<void> dbresult;
 			auto callback = [](void* a0, int a1, char** a2, char** a3)->int {
 				SQLITE_RES r{ a1,a2,a3 };
 				auto fun = static_cast<std::function<void(SQLITE_RES*)>*>(a0);
@@ -343,18 +350,23 @@ namespace xorm {
 				return 0;
 			};
 			if (sqlite3_exec(sqlite_handler_, sql.data(), callback, const_cast<std::function<void(SQLITE_RES*)>*>(&data_callback), nullptr) != SQLITE_OK) {
-				trigger_error(sqlite3_errmsg(sqlite_handler_));
-				return false;
+				std::string message = sqlite3_errmsg(sqlite_handler_);
+				trigger_error(message);
+				dbresult.success = false;
+				dbresult.error.is_error_ = true;
+				dbresult.error.message_ = message;
+				return dbresult;
 			}
-			return true;
+			dbresult.success = true;
+			return dbresult;
 		}
-		bool begin() {
+		db_result<void> begin() {
 			return execute("BEGIN");
 		}
-		bool commit() {
+		db_result<void> commit() {
 			return execute("COMMIT");
 		}
-		bool rollback() {
+		db_result<void> rollback() {
 			return execute("ROLLBACK");
 		}
 		std::uint64_t get_affected_rows() {
@@ -362,47 +374,65 @@ namespace xorm {
 		}
 	private:
 		template<typename...Params>
-		std::pair<bool, std::uint64_t> stmt_execute(std::string const& sqlStr, Params&& ...params) {
+		db_result<void> stmt_execute(std::string const& sqlStr, Params&& ...params) {
 			sqlite3_stmt* stmt = nullptr;
 			auto r = sqlite3_prepare_v2(sqlite_handler_, sqlStr.c_str(), (int)sqlStr.size(), &stmt, nullptr);
 			stmt_guard<sqlite3_stmt> guard{ stmt };
+			db_result<void> dbresult;
 			if (r == SQLITE_OK) {
 				auto result = bind_params_without_obj(stmt, std::make_tuple(params...), xorm_utils::make_index_package<sizeof...(params)>{});
 				if (result == SQLITE_OK) {
 					result = sqlite3_step(stmt);
 					if (result == SQLITE_DONE) {
 						auto effect_rows = get_affected_rows();
-						return { effect_rows!=0,effect_rows };
+						dbresult.affect_rows = effect_rows;
+						dbresult.success = true;
+						dbresult.unique_id = sqlite3_last_insert_rowid(sqlite_handler_);
+						return dbresult;
 					}
 				}
 			}
-			return { false,0 };
+			std::string error_message = sqlite3_errmsg(sqlite_handler_);
+			trigger_error(error_message);
+			dbresult.success = false;
+			dbresult.error.is_error_ = true;
+			dbresult.error.message_ = error_message;
+			return dbresult;
 		}
 
 		template<typename T, typename = std::enable_if<reflector::is_reflect_class<typename std::remove_reference<T>::type>::value>,typename Tuple>
-		std::pair<bool, std::uint64_t> stmt_execute_with_obj(std::string const& sqlStr, T&& obj, Tuple&& tup) {
+		db_result<void> stmt_execute_with_obj(std::string const& sqlStr, T&& obj, Tuple&& tup) {
 			sqlite3_stmt* stmt = nullptr;
 			auto r = sqlite3_prepare_v2(sqlite_handler_, sqlStr.c_str(), (int)sqlStr.size(), &stmt, nullptr);
 			stmt_guard<sqlite3_stmt> guard{ stmt };
+			db_result<void> dbresult;
 			if (r == SQLITE_OK) {
 				auto result = bind_params_with_obj(stmt,std::forward<T>(obj), std::forward<Tuple>(tup), xorm_utils::make_index_package<std::tuple_size<typename std::remove_reference<Tuple>::type>::value>{});
 				if (result == SQLITE_OK) {
 					result = sqlite3_step(stmt);
 					if (result == SQLITE_DONE) {
-						return { get_affected_rows()!=0,sqlite3_last_insert_rowid(sqlite_handler_)};
+						dbresult.affect_rows = get_affected_rows();
+						dbresult.success = true;
+						dbresult.unique_id = sqlite3_last_insert_rowid(sqlite_handler_);
+						return dbresult;
 					}
 				}
 			}
-			return { false,0 };
+			std::string error_message = sqlite3_errmsg(sqlite_handler_);
+			trigger_error(error_message);
+			dbresult.success = false;
+			dbresult.error.is_error_ = true;
+			dbresult.error.message_ = error_message;
+			return dbresult;
 		}
 
 	private:
 		template<typename T,typename...Params>
-		std::pair<bool,std::vector<T>> get_obj_stmt_execute(std::string const& sqlStr, Params&& ...params) {
+		db_result<T> get_obj_stmt_execute(std::string const& sqlStr, Params&& ...params) {
 			sqlite3_stmt* stmt = nullptr;
 			auto r = sqlite3_prepare_v2(sqlite_handler_, sqlStr.c_str(), -1, &stmt, nullptr);
 			stmt_guard<sqlite3_stmt> guard{ stmt };
-			std::vector<T> vec;
+			db_result<T> dbresult;
 			if (r == SQLITE_OK) {
 				auto result = bind_params_without_obj(stmt, std::make_tuple(params...), xorm_utils::make_index_package<sizeof...(params)>{});
 				if (result == SQLITE_OK) {
@@ -410,34 +440,66 @@ namespace xorm {
 						T tmp{};
 						auto meta = meta_info_reflect(tmp);
 						get_row_data_for_obj(stmt, tmp, meta.get_element_meta_protype(), xorm_utils::make_index_package<meta.element_size()>{});
-						vec.emplace_back(tmp);
+						dbresult.results.emplace_back(tmp);
 					}
-					return { true,vec };
+					dbresult.success = true;
+					return dbresult;
+				}
+				else {
+					std::string error_message = sqlite3_errmsg(sqlite_handler_);
+					trigger_error(error_message);
+					dbresult.success = false;
+					dbresult.error.is_error_ = true;
+					dbresult.error.message_ = error_message;
+					return dbresult;
 				}
 			}
-			trigger_error(sqlite3_errmsg(sqlite_handler_));
-			return {false,vec };
+			else {
+				std::string error_message = sqlite3_errmsg(sqlite_handler_);
+				trigger_error(error_message);
+				dbresult.success = false;
+				dbresult.error.is_error_ = true;
+				dbresult.error.message_ = error_message;
+				return dbresult;
+			}
+			return dbresult;
 		}
 
 		template<typename T, typename...Params>
-		std::pair<bool, std::vector<T>> get_tuple_stmt_execute(std::string const& sqlStr, Params&& ...params) {
+		db_result<T> get_tuple_stmt_execute(std::string const& sqlStr, Params&& ...params) {
 			sqlite3_stmt* stmt = nullptr;
 			auto r = sqlite3_prepare_v2(sqlite_handler_, sqlStr.c_str(), -1, &stmt, nullptr);
 			stmt_guard<sqlite3_stmt> guard{ stmt };
-			std::vector<T> vec;
+			db_result<T> dbresult;
 			if (r == SQLITE_OK) {
 				auto result = bind_params_without_obj(stmt, std::make_tuple(params...), xorm_utils::make_index_package<sizeof...(params)>{});
 				if (result == SQLITE_OK) {
 					while (sqlite3_step(stmt) == SQLITE_ROW) {
 						T tmp{};
 						get_row_data_for_tuple(stmt, tmp, xorm_utils::make_index_package<std::tuple_size<T>::value>{},true);
-						vec.emplace_back(tmp);
+						dbresult.results.emplace_back(tmp);
 					}
-					return { true,vec };
+					dbresult.success = true;
+					return dbresult;
+				}
+				else {
+					std::string error_message = sqlite3_errmsg(sqlite_handler_);
+					trigger_error(error_message);
+					dbresult.success = false;
+					dbresult.error.is_error_ = true;
+					dbresult.error.message_ = error_message;
+					return dbresult;
 				}
 			}
-			trigger_error(sqlite3_errmsg(sqlite_handler_));
-			return { false,vec };
+			else {
+				std::string error_message = sqlite3_errmsg(sqlite_handler_);
+				trigger_error(error_message);
+				dbresult.success = false;
+				dbresult.error.is_error_ = true;
+				dbresult.error.message_ = error_message;
+				return dbresult;
+			}
+			return dbresult;
 		}
 	private:
 		bool is_connect_ = false;

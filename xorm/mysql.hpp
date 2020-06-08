@@ -17,6 +17,7 @@
 #include "data_type.hpp"
 #include "meta_utility.hpp"
 #include "dbconfig.hpp"
+#include "db_utils.hpp"
 namespace xorm {
 
 	template<typename T0>
@@ -299,7 +300,7 @@ namespace xorm {
 		}
 	public:
 		template<typename T>
-		typename std::enable_if<reflector::is_reflect_class<typename std::remove_reference<T>::type>::value, std::pair<bool, std::int64_t>>::type insert(T&& t) {
+		typename std::enable_if<reflector::is_reflect_class<typename std::remove_reference<T>::type>::value, db_result<void>>::type insert(T&& t) {
 			auto meta = meta_info_reflect(t);
 			std::string tablename = meta.get_class_name();
 			std::stringstream ss;
@@ -312,24 +313,22 @@ namespace xorm {
 			auto_params_lambda0<mysql> lambda{ ss ,index ,size ,value_place ,bind,this };
 			reflector::each_object(std::forward<T>(t), lambda);
 			ss << ")" << " VALUES(" << value_place << ")";
-			auto r = stmt_execute(ss.str(), bind);
-			return { r.first != 0,r.second };
+			return stmt_execute(ss.str(), bind);
 		}
 
 		template<typename T,typename...U>
-		typename std::enable_if<reflector::is_reflect_class<typename std::remove_reference<T>::type>::value, std::pair<bool,std::uint64_t>>::type del(std::string const& condition,U&&...args) {
+		typename std::enable_if<reflector::is_reflect_class<typename std::remove_reference<T>::type>::value, db_result<void>>::type del(std::string const& condition,U&&...args) {
 			//static_assert((sizeof...(args)) != 0, "require at least one argument!!!");
 			auto meta = meta_info_reflect(T{});
 			MYSQL_BIND bind[sizeof...(args)+1];  //0 argument will be ill-formed
 			std::string sql = "DELETE FROM `" + meta.get_class_name() + "` " + condition;
 			auto tp = std::make_tuple(std::forward<U>(args)...);
 			expand_bind_value(bind, tp, xorm_utils::make_index_package<sizeof...(args)>{});
-			auto r = stmt_execute(sql, bind);
-			return { r.first != 0,r.first };
+			return stmt_execute(sql, bind);
 		}
 
 		template<typename T>
-		typename std::enable_if<reflector::is_reflect_class<typename std::remove_reference<T>::type>::value, bool>::type update(T&& v) {
+		typename std::enable_if<reflector::is_reflect_class<typename std::remove_reference<T>::type>::value, db_result<void>>::type update(T&& v) {
 			auto meta = meta_info_reflect(v);
 			std::string tablename = meta.get_class_name();
 			std::stringstream ss;
@@ -342,8 +341,7 @@ namespace xorm {
 			auto_params_lambda0<mysql> lambda{ ss ,index ,size ,value_place ,bind,this };
 			reflector::each_object(std::forward<T>(v), lambda);
 			ss << ")" << " VALUES(" << value_place << ")";
-			auto rpr = stmt_execute(ss.str(), bind);
-			return rpr.first == 2 ? true : false;
+			return stmt_execute(ss.str(), bind);
 		}
 
 		void void_parameter_content(...) {
@@ -361,13 +359,12 @@ namespace xorm {
 		}
 
 		template<typename...T>
-		std::pair<bool, std::uint64_t> update(std::string const& sql,T&&...args) {
+		db_result<void> update(std::string const& sql,T&&...args) {
 			//static_assert((sizeof...(args)) != 0, "require at least one argument!!!");
 			MYSQL_BIND bind[sizeof...(args)+1];  //0 argument will be ill-formed
 			auto tp = std::make_tuple(std::forward<T>(args)...);
 			expand_bind_value(bind, tp, xorm_utils::make_index_package<sizeof...(args)>{});
-			auto r = stmt_execute(sql, bind);
-			return { r.first!=0,r.first };
+			return stmt_execute(sql, bind);
 		}
 
 		//template<typename T>
@@ -388,7 +385,7 @@ namespace xorm {
 		//}
 
 		template<typename T,typename...Params>
-		typename std::enable_if<reflector::is_reflect_class<typename std::remove_reference<T>::type>::value, std::pair<bool, std::vector<T>>>::type query(std::string const& condition , Params&&...params) {
+		typename std::enable_if<reflector::is_reflect_class<typename std::remove_reference<T>::type>::value, db_result<T>>::type query(std::string const& condition , Params&&...params) {
 			auto meta = meta_info_reflect(T{});
 			std::string tablename = meta.get_class_name();
 			std::stringstream ss;
@@ -411,14 +408,19 @@ namespace xorm {
 			stmt_guard<MYSQL_STMT> guard(pStmt);
 			string_size_vec_clear string_guard{ record_string_size_ };
 			record_string_size_.reserve(meta.element_size()*2);
-			std::vector<T> result;
+			db_result<T> dbresult;
 			if (pStmt != nullptr) {
 				auto sqlStr = ss.str();
 				int iRet = mysql_stmt_prepare(pStmt, sqlStr.c_str(), (unsigned long)sqlStr.size());
 				if (iRet == 0) {
 					iRet = mysql_stmt_bind_param(pStmt, bind_params);
 					if (iRet != 0) {
-						return { false,result };
+						std::string error_message = mysql_error(conn_);
+						trigger_error(error_message);
+						dbresult.success = false;
+						dbresult.error.is_error_ = true;
+						dbresult.error.message_ = error_message;
+						return dbresult;
 					}
 					T tmp{};
 					int index = 0;
@@ -433,19 +435,44 @@ namespace xorm {
 								T copy_v{};
 								auto_params_lambda3<T, mysql> lambda3{ this,copy_v };
 								reflector::each_object(tmp, lambda3);
-								result.emplace_back(std::move(copy_v));
+								dbresult.results.emplace_back(std::move(copy_v));
 							}
-							return { true,result };
+							dbresult.success = true;
+							return dbresult;
+						}
+						else {
+							std::string error_message = mysql_error(conn_);
+							trigger_error(error_message);
+							dbresult.success = false;
+							dbresult.error.is_error_ = true;
+							dbresult.error.message_ = error_message;
+							return dbresult;
 						}
 					}
+					else {
+						std::string error_message = mysql_error(conn_);
+						trigger_error(error_message);
+						dbresult.success = false;
+						dbresult.error.is_error_ = true;
+						dbresult.error.message_ = error_message;
+						return dbresult;
+					}
+				}
+				else {
+					std::string error_message = mysql_error(conn_);
+					trigger_error(error_message);
+					dbresult.success = false;
+					dbresult.error.is_error_ = true;
+					dbresult.error.message_ = error_message;
+					return dbresult;
 				}
 			}
-			trigger_error(mysql_error(conn_));
-			return { false,result };
+			dbresult.success = false;
+			return dbresult;
 		}
 
 		template<typename T, typename...Params>
-		typename std::enable_if<xorm::is_tuple_type<T>::value, std::pair<bool, std::vector<T>>>::type query(std::string const& sqlStr ,Params&& ...params) {
+		typename std::enable_if<xorm::is_tuple_type<T>::value, db_result<T>>::type query(std::string const& sqlStr ,Params&& ...params) {
 			constexpr std::size_t tuple_size = std::tuple_size<T>::value;
 			MYSQL_BIND bind[tuple_size];
 			MYSQL_BIND bind_params[sizeof...(params) + 1];  //0 will ill-formed
@@ -456,13 +483,18 @@ namespace xorm {
 			stmt_guard<MYSQL_STMT> guard(pStmt);
 			string_size_vec_clear string_guard{ record_string_size_ };
 			record_string_size_.reserve(tuple_size*2);
-			std::vector<T> result;
+			db_result<T> dbresult;
 			if (pStmt != nullptr) {
 				int iRet = mysql_stmt_prepare(pStmt, sqlStr.c_str(), (unsigned long)sqlStr.size());
 				if (iRet == 0) {
 					iRet = mysql_stmt_bind_param(pStmt, bind_params);
 					if (iRet != 0) {
-						return { false,result };
+						std::string error_message = mysql_error(conn_);
+						trigger_error(error_message);
+						dbresult.success = false;
+						dbresult.error.is_error_ = true;
+						dbresult.error.message_ = error_message;
+						return dbresult;
 					}
 					T tmp{};
 					int index = 0;
@@ -477,56 +509,93 @@ namespace xorm {
 								T copy_v{};
 								auto_params_lambda5<mysql> lambda5{ bind ,this };
 								each_tuple<0, tuple_size>::each2(tmp, copy_v, lambda5);
-								result.emplace_back(std::move(copy_v));
+								dbresult.results.emplace_back(std::move(copy_v));
 							}
-							return { true,result };
+							dbresult.success = true;
+							return dbresult;
+						}
+						else {
+							std::string error_message = mysql_error(conn_);
+							trigger_error(error_message);
+							dbresult.success = false;
+							dbresult.error.is_error_ = true;
+							dbresult.error.message_ = error_message;
+							return dbresult;
 						}
 					}
+					else {
+						std::string error_message = mysql_error(conn_);
+						trigger_error(error_message);
+						dbresult.success = false;
+						dbresult.error.is_error_ = true;
+						dbresult.error.message_ = error_message;
+						return dbresult;
+					}
+				}
+				else {
+					std::string error_message = mysql_error(conn_);
+					trigger_error(error_message);
+					dbresult.success = false;
+					dbresult.error.is_error_ = true;
+					dbresult.error.message_ = error_message;
+					return dbresult;
 				}
 			}
-			trigger_error(mysql_error(conn_));
-			return { false,result };
+			dbresult.success = false;
+			return dbresult;
 		}
 
-		bool execute(std::string const& sql) {
+		db_result<void> execute(std::string const& sql) {
+			db_result<void> dbresult;
 			auto iRet = mysql_query(conn_, sql.c_str());
 			bool r = iRet != 0 ? false : true;
 			if (r) {
+				dbresult.success = true;
 				auto pRes = mysql_use_result(conn_);
 				mysql_free_result(pRes);
 			}
 			else {
-				trigger_error(mysql_error(conn_));
+				std::string message = mysql_error(conn_);
+				trigger_error(message);
+				dbresult.success = false;
+				dbresult.error.is_error_ = true;
+				dbresult.error.message_ = message;
 			}
-			return r;
+			return dbresult;
 		}
 
-		bool execute(std::string const& sql, std::function<void(MYSQL_RES*)> const& data_callback) {
+		db_result<void> execute(std::string const& sql, std::function<void(MYSQL_RES*)> const& data_callback) {
 			auto iRet = mysql_query(conn_, sql.c_str());
+			db_result<void> dbresult;
 			bool r = iRet != 0 ? false : true;
 			if (r) {
+				dbresult.success = true;
 				auto pRes = mysql_store_result(conn_);
 				data_callback(pRes);
 				mysql_free_result(pRes);
 			}
 			else {
+				std::string message = mysql_error(conn_);
+				trigger_error(message);
 				data_callback(nullptr);
-				trigger_error(mysql_error(conn_));
+				dbresult.success = false;
+				dbresult.error.is_error_ = true;
+				dbresult.error.message_ = message;
 			}
-			return r;
+			return dbresult;
 		}
 
 		std::uint64_t get_affected_rows() {
 			return mysql_affected_rows(conn_);
 		}
 
-		bool begin() {
+		db_result<void> begin() {
 			return execute("BEGIN");
 		}
-		bool commit() {
+		db_result<void> commit() {
 			return execute("COMMIT");
 		}
-		bool rollback() {
+		db_result<void> rollback() {
 			return execute("ROLLBACK");
 		}
 		void set_max_string_size(std::size_t size) {
@@ -536,9 +605,10 @@ namespace xorm {
 			return string_max_size_;
 		}
 	private:
-		std::pair<std::uint64_t, std::uint64_t> stmt_execute(std::string const& sqlStr, MYSQL_BIND* bind) {
+		db_result<void> stmt_execute(std::string const& sqlStr, MYSQL_BIND* bind) {
 			MYSQL_STMT* pStmt = mysql_stmt_init(conn_);
 			stmt_guard<MYSQL_STMT> guard(pStmt);
+			db_result<void> result;
 			if (pStmt != nullptr) {
 				//begin();
 				int iRet = mysql_stmt_prepare(pStmt, sqlStr.data(), (unsigned long)sqlStr.size());
@@ -551,16 +621,29 @@ namespace xorm {
 							if (rows != 0) {
 								//bool cr = commit();
 								auto key_id = mysql_insert_id(conn_);
-								return { rows,key_id };
+								result.success = true;
+								result.affect_rows = rows;
+								result.unique_id = key_id;
+								return result;
 							}
-							return { 0 ,0 };
+							result.success = false;
+							result.affect_rows = 0;
+							result.unique_id = 0;
+							return result;
 						}
 					}
 				}
-				trigger_error(mysql_error(conn_));
+				std::string error_message = mysql_error(conn_);
+				trigger_error(error_message);
+				result.affect_rows = 0;
+				result.success = false;
+				result.unique_id = 0;
+				result.error.is_error_ = true;
+				result.error.message_ = error_message;
+				return result;
 				//rollback();
 			}
-			return { 0 ,0 };
+			return result;
 		}
 	public:
 		void set_error_callback(std::function<void(std::string const&)> const& callback) {

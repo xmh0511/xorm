@@ -6,7 +6,7 @@
 #include "dbconfig.hpp"
 #include "reflect/reflector.hpp"
 #include <iostream>
-
+#include "db_utils.hpp"
 namespace xorm {
 
 	class dao_message {
@@ -78,32 +78,32 @@ namespace xorm {
 		  second: insert data's id(key)
 		*/
 		template<typename T> 
-		std::pair<bool, std::int64_t> insert(T&& t) {
+		db_result<void> insert(T&& t) {
 			if (!conn_->is_connect()) {
-				return {false,0};
+				return {};
 			}
 			return conn_->insert(std::forward<T>(t));
 		}
 		template<typename T,typename...U>
-		std::pair<bool, std::uint64_t> del(std::string const& condition,U&&...args) {
+		db_result<void> del(std::string const& condition,U&&...args) {
 			if (!conn_->is_connect()) {
-				return {false,0};
+				return {};
 			}
 			return conn_->template del<T>(condition,std::forward<U>(args)...);
 		}
 
 		template<typename T,typename  = typename std::enable_if<reflector::is_reflect_class<typename std::remove_reference<T>::type>::value>::type>
-		bool update(T&& v) {
+		db_result<void> update(T&& v) {
 			if (!conn_->is_connect()) {
-				return false ;
+				return {};
 			}
 			return conn_->update(std::forward<T>(v));
 		}
 
 		template<typename...T>
-		std::pair<bool, std::uint64_t> update(std::string const& condition,T&&...args) {
+		db_result<void> update(std::string const& condition,T&&...args) {
 			if (!conn_->is_connect()) {
-				return {false,0};
+				return {};
 			}
 			return conn_->update(condition,std::forward<T>(args)...);
 		}
@@ -117,34 +117,34 @@ namespace xorm {
 		//}
 
 		template<typename T,typename...Params>
-		std::pair<bool, std::vector<T>> query(std::string const& condition, Params&&...params) {
+		db_result<T> query(std::string const& condition, Params&&...params) {
 			if (!conn_->is_connect()) {
-				return { false,{} };
+				return {};
 			}
 			return conn_->template query<T>(condition,std::forward<Params>(params)...);
 		}
 
-		bool begin() {
+		db_result<void> begin() {
 			return conn_->begin();
 		}
 
-		bool commit() {
-			bool b =  conn_->commit();
-			start_transaction_ = !b;
-			return b;
+		db_result<void> commit() {
+			auto r =  conn_->commit();
+			start_transaction_ = !r.success;
+			return r;
 		}
 
-		bool rollback() {
+		db_result<void> rollback() {
 			start_transaction_ = false;
 			return conn_->rollback();
 		}
 
-		bool execute(std::string const& sql) {
+		db_result<void> execute(std::string const& sql) {
 			return conn_->execute(sql);
 		}
 
 		template<typename T>
-		bool execute(std::string const& sql,std::function<void(T)> const& callback) {
+		db_result<void> execute(std::string const& sql,std::function<void(T)> const& callback) {
 			return conn_->execute(sql, callback);
 		}
 
