@@ -54,10 +54,10 @@ int main(){
 ##### db_result<void> insert(T&& t)
 * 参数： 通过REFLECTION注册过的表结构对象  
 * 返回数据： 
- - *success* SQL语句无错误返回true 
- - *affect_rows* 影响行数
- - *unique_id* 唯一ID
- - *error* 是否有错误（error.message取出错误详情）
+ -- *success* SQL语句无错误返回true 
+ -- *affect_rows* 影响行数
+ -- *unique_id* 唯一ID
+ -- *error* 是否有错误（error.message取出错误详情）
  
 ````
 #include <iostream>
@@ -103,10 +103,10 @@ int main(){
 * 后续参数： 条件中的值  
 > mysql::Integer{10}    
 * 返回数据： 
- - *success* SQL语句无错误返回true 
- - *affect_rows* 影响行数
- - *unique_id* 唯一ID
- - *error* 是否有错误（error.message取出错误详情）
+> *success* SQL语句无错误返回true 
+> *affect_rows* 影响行数
+> *unique_id* 唯一ID
+> *error* 是否有错误（error.message取出错误详情）
 	
 ````
 #include <iostream>
