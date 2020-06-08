@@ -51,9 +51,10 @@ int main(){
 ````
 #  新增数据
 >通过dao_t<DataBase>::insert 进行数据的添加  
-##### std::pair<bool, std::int64_t> insert(T&& t)
+##### db_result<void> insert(T&& t)
 * 参数： 通过REFLECTION注册过的表结构对象  
-* 返回类型： 是否成功和插入成功后此条数据的id  
+* 返回数据： success: SQL语句无错误返回true ， affect_rows: 影响行数， unique_id: 唯一ID， error: 是否有错误（error.message取出错误详情）
+ 
 ````
 #include <iostream>
 #include "mysql.hpp"
@@ -80,17 +81,24 @@ int main(){
 	data.tm.format_timestamp(std::time(nullptr));
 	data.money = 12.03;
 	auto pr = dao.insert(data);
-	std::cout<<"insert row "<<pr.first<<" insert key "<<pr.second<<std::endl;
+	if (pr.success == true && pr.affect_rows > 0)
+	{
+		std::cout << "insert row " << pr.affect_rows << " insert id " << pr.unique_id << std::endl;
+	}
+	else {
+		std::cout << "error " << pr.error << " message " << pr.error.message() << std::endl;
+	}
 }
 ````
 
 #   删除数据
 >通过dao_t<DataBase>::del 进行数据的删减    
-##### std::pair<bool, std::uint64_t> del(std::string const& condition,...)
+##### db_result<void>  del(std::string const& condition,...)
 * 参数1： 删除条件，可以为空字符串 
 > "where id=?"  
 * 后续参数： 条件中的值  
 > mysql::Integer{10}    
+* 返回数据： success: SQL语句无错误返回true ， affect_rows: 影响行数， unique_id: 唯一ID， error: 是否有错误（error.message取出错误详情）
 	
 ````
 #include <iostream>
@@ -113,19 +121,20 @@ int main(){
 }
 ````
 
-####   修改数据  
+#   修改数据  
 >支持两种方式   
-###### bool update(T&& v)   
+###### db_result<void> update(T&& v)   
 * 参数： 数据表结构对象  
-* 返回： 是否成功  
+* 返回数据： success: SQL语句无错误返回true ， affect_rows: 影响行数， unique_id: 唯一ID， error: 是否有错误（error.message取出错误详情）
 
-######  std::pair<bool, std::uint64_t> update(std::string const& condition,...)  
+
+######  db_result<void> update(std::string const& condition,...)  
 * 参数: update语句  
 >"update test set a=? where id=?"  
 * 后续参数: 条件中的值  
 >如 mysql::Integer{10}  
-* 返回： 是否成功,影响行数  
-
+* 返回数据： success: SQL语句无错误返回true ， affect_rows: 影响行数， unique_id: 唯一ID， error: 是否有错误（error.message取出错误详情）
+ 
 ````
 #include <iostream>
 #include "mysql.hpp"
@@ -151,21 +160,22 @@ int main(){
 }
 ````
 
-####   查询数据
-###### std::pair<bool, std::vector<T>> query(std::string const& condition, ...)
+#   查询数据
+###### db_result<T> query(std::string const& condition, ...)
 * 模板参数: 数据表结构类型  	
 * 参数： 查询条件 (可以为空字符串)
 >"where id=?"
 * 后续参数: 条件中的值  
 >如 mysql::Integer{1}
-* 返回: 是否成功,查询的数据集合数组
+* 返回数据： success: SQL语句无错误返回true ， results: 返回数据结果vector ， error: 是否有错误（error.message取出错误详情）
+ 
 ###### 使用方式二   
 * 模板参数: 自定义std::tuple\<T...\> 如 std::tuple\<mysql::Integer,std::string\> 代表查询的数据集的field类型
 * 参数： 完整的查询语句
 >"where id=?"
 * 后续参数: 条件中的值  
 >如 mysql::Integer{1}
-* 返回: 是否成功,查询的数据集合数组
+* 返回数据： success: SQL语句无错误返回true ， results: 返回数据结果vector ， error: 是否有错误（error.message取出错误详情）
 
 ````
 #include <iostream>
@@ -190,14 +200,16 @@ int main(){
 ````
 # execute方法  
 >支持原生数据库的命令执行  
-##### bool execute(std::string const& sql)
+##### db_result<void> execute(std::string const& sql)
 * 参数: 完整的sql语句
-* 返回：执行结果
-##### bool execute(std::string const& sql,...)
+* 返回数据： success: SQL语句无错误返回true ， affect_rows: 影响行数， unique_id: 唯一ID， error: 是否有错误（error.message取出错误详情）
+
+##### db_result<void> execute(std::string const& sql,...)
 * 参数: 完整的sql语句
 >如果执行的sql语句可以返回结果集合  
 * 参数2: 执行结果集的回调方法,回调参数为数据结果集的指针（可能是nullptr）  
-* 返回：执行结果
+* 返回数据： success: SQL语句无错误返回true ， affect_rows: 影响行数， unique_id: 唯一ID， error: 是否有错误（error.message取出错误详情）
+
 ````cpp
 #include <iostream>
 #include "mysql.hpp"
