@@ -53,11 +53,7 @@ int main(){
 >通过dao_t<DataBase>::insert 进行数据的添加  
 ##### db_result<void> insert(T&& t)
 * 参数： 通过REFLECTION注册过的表结构对象  
-* 返回数据： 
- > success: SQL语句无错误返回true 
- > affect_rows: 影响行数
- > unique_id: 唯一ID
- > error: 是否有错误（error.message取出错误详情）
+* 返回数据： success: SQL语句无错误返回true ， affect_rows: 影响行数， unique_id: 唯一ID， error: 是否有错误（error.message取出错误详情）
  
 ````
 #include <iostream>
@@ -102,11 +98,7 @@ int main(){
 > "where id=?"  
 * 后续参数： 条件中的值  
 > mysql::Integer{10}    
-* 返回数据： 
- > success: SQL语句无错误返回true 
- > affect_rows: 影响行数
- > unique_id: 唯一ID
- > error: 是否有错误（error.message取出错误详情）
+* 返回数据： success: SQL语句无错误返回true ， affect_rows: 影响行数， unique_id: 唯一ID， error: 是否有错误（error.message取出错误详情）
 	
 ````
 #include <iostream>
@@ -133,11 +125,7 @@ int main(){
 >支持两种方式   
 ###### db_result<void> update(T&& v)   
 * 参数： 数据表结构对象  
-* 返回数据： 
- > success: SQL语句无错误返回true 
- > affect_rows: 影响行数
- > unique_id: 唯一ID
- > error: 是否有错误（error.message取出错误详情）
+* 返回数据： success: SQL语句无错误返回true ， affect_rows: 影响行数， unique_id: 唯一ID， error: 是否有错误（error.message取出错误详情）
 
 
 ######  db_result<void> update(std::string const& condition,...)  
@@ -145,11 +133,7 @@ int main(){
 >"update test set a=? where id=?"  
 * 后续参数: 条件中的值  
 >如 mysql::Integer{10}  
-* 返回数据： 
- > success: SQL语句无错误返回true 
- > affect_rows: 影响行数
- > unique_id: 唯一ID
- > error: 是否有错误（error.message取出错误详情）
+* 返回数据： success: SQL语句无错误返回true ， affect_rows: 影响行数， unique_id: 唯一ID， error: 是否有错误（error.message取出错误详情）
  
 ````
 #include <iostream>
@@ -183,10 +167,7 @@ int main(){
 >"where id=?"
 * 后续参数: 条件中的值  
 >如 mysql::Integer{1}
-* 返回数据：
- > success: SQL语句无错误返回true 
- > results: 返回数据结果vector
- > error: 是否有错误（error.message取出错误详情）
+* 返回数据： success: SQL语句无错误返回true ， results: 返回数据结果vector ， error: 是否有错误（error.message取出错误详情）
  
 ###### 使用方式二   
 * 模板参数: 自定义std::tuple\<T...\> 如 std::tuple\<mysql::Integer,std::string\> 代表查询的数据集的field类型
@@ -194,10 +175,7 @@ int main(){
 >"where id=?"
 * 后续参数: 条件中的值  
 >如 mysql::Integer{1}
-* 返回数据： 
- > success: SQL语句无错误返回true 
- > results: 返回数据结果vector
- > error: 是否有错误（error.message取出错误详情）
+* 返回数据： success: SQL语句无错误返回true ， results: 返回数据结果vector ， error: 是否有错误（error.message取出错误详情）
 
 ````
 #include <iostream>
@@ -224,21 +202,13 @@ int main(){
 >支持原生数据库的命令执行  
 ##### db_result<void> execute(std::string const& sql)
 * 参数: 完整的sql语句
-* 返回数据： 
- > success: SQL语句无错误返回true 
- > affect_rows: 影响行数
- > unique_id: 唯一ID
- > error: 是否有错误（error.message取出错误详情）
+* 返回数据： success: SQL语句无错误返回true ， affect_rows: 影响行数， unique_id: 唯一ID， error: 是否有错误（error.message取出错误详情）
 
 ##### db_result<void> execute(std::string const& sql,...)
 * 参数: 完整的sql语句
 >如果执行的sql语句可以返回结果集合  
 * 参数2: 执行结果集的回调方法,回调参数为数据结果集的指针（可能是nullptr）  
-* 返回数据： 
- > success: SQL语句无错误返回true 
- > affect_rows: 影响行数
- > unique_id: 唯一ID
- > error: 是否有错误（error.message取出错误详情）
+* 返回数据： success: SQL语句无错误返回true ， affect_rows: 影响行数， unique_id: 唯一ID， error: 是否有错误（error.message取出错误详情）
 
 ````cpp
 #include <iostream>
