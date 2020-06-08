@@ -618,29 +618,45 @@ namespace xorm {
 						iRet = mysql_stmt_execute(pStmt);
 						if (iRet == 0) {
 							auto rows = mysql_stmt_affected_rows(pStmt);
-							if (rows != 0) {
 								//bool cr = commit();
-								auto key_id = mysql_insert_id(conn_);
-								result.success = true;
-								result.affect_rows = rows;
-								result.unique_id = key_id;
-								return result;
-							}
-							result.success = false;
+							auto key_id = mysql_insert_id(conn_);
+							result.success = true;
+							result.affect_rows = rows;
+							result.unique_id = key_id;
+							return result;
+						}
+						else {
+							std::string error_message = mysql_error(conn_);
+							trigger_error(error_message);
 							result.affect_rows = 0;
+							result.success = false;
 							result.unique_id = 0;
+							result.error.is_error_ = true;
+							result.error.message_ = error_message;
 							return result;
 						}
 					}
+					else {
+						std::string error_message = mysql_error(conn_);
+						trigger_error(error_message);
+						result.affect_rows = 0;
+						result.success = false;
+						result.unique_id = 0;
+						result.error.is_error_ = true;
+						result.error.message_ = error_message;
+						return result;
+					}
 				}
-				std::string error_message = mysql_error(conn_);
-				trigger_error(error_message);
-				result.affect_rows = 0;
-				result.success = false;
-				result.unique_id = 0;
-				result.error.is_error_ = true;
-				result.error.message_ = error_message;
-				return result;
+				else {
+					std::string error_message = mysql_error(conn_);
+					trigger_error(error_message);
+					result.affect_rows = 0;
+					result.success = false;
+					result.unique_id = 0;
+					result.error.is_error_ = true;
+					result.error.message_ = error_message;
+					return result;
+				}
 				//rollback();
 			}
 			return result;
