@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 struct dataBaseConfig {
+	std::string index_key;
 	std::string host;
 	std::string user;
 	std::string password;
