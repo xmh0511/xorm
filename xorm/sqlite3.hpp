@@ -206,7 +206,7 @@ namespace xorm {
 	private:
 		void trigger_error(std::string const& msg) {
 			if (error_callback_ != nullptr) {
-				error_callback_(msg);
+				error_callback_("db_index: " + db_index_key_ + " , error: " + msg);
 			}
 		}
 		void set_error_callback(std::function<void(std::string const&)> const& callback) {
@@ -236,6 +236,7 @@ namespace xorm {
 			disconnect();
 		}
 		bool connect(dataBaseConfig const& config) {
+			db_index_key_ = config.index_key;
 			auto r = sqlite3_open(config.host.c_str(), &sqlite_handler_);
 			if (r == SQLITE_OK) {  //表示连接成功
 #ifdef SQLITE_HAS_CODEC
@@ -505,6 +506,7 @@ namespace xorm {
 		bool is_connect_ = false;
 		sqlite3* sqlite_handler_ = nullptr;
 		std::function<void(std::string const&)> error_callback_;
+		std::string db_index_key_;
 	};
 }
 #endif //  ENABLE_SQLITE

@@ -244,6 +244,7 @@ namespace xorm {
 		}
 	public:
 		void connect(dataBaseConfig const& config) {
+			db_index_key_ = config.index_key;
 			bool is_success = false;
 			if (0 == mysql_server_init(0, nullptr, nullptr)) {
 				is_success = true;
@@ -669,7 +670,7 @@ namespace xorm {
 		}
 		void trigger_error(std::string const& message) {
 			if (error_callback_ != nullptr) {
-				error_callback_(message);
+				error_callback_("db_index: "+ db_index_key_+ " , error: "+ message);
 			}
 		}
 	private:
@@ -678,6 +679,7 @@ namespace xorm {
 		std::size_t string_max_size_ = 1024 * 1024;
 		std::function<void(std::string const&)> error_callback_;
 		std::vector<unsigned long> record_string_size_;
+		std::string db_index_key_;
 	};
 }
 #endif // ENABLE_MYSQL
