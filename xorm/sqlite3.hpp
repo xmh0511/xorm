@@ -61,15 +61,15 @@ namespace xorm {
 		constexpr static bool value = true;
 	};
 
-	template<typename T>
-	typename std::enable_if<is_sqlitefundametion_type<typename std::remove_reference<T>::type>::value, bool>::type is_null_value_for_field(T&& t) {
-		return t.is_null();
-	}
+	//template<typename T>
+	//typename std::enable_if<is_sqlitefundametion_type<typename std::remove_reference<T>::type>::value, bool>::type is_null_value_for_field(T&& t) {
+	//	return t.is_null();
+	//}
 
-	template<typename T>
-	typename std::enable_if<!is_sqlitefundametion_type<typename std::remove_reference<T>::type>::value, bool>::type is_null_value_for_field(T&& t) {
-		return t.empty();
-	}
+	//template<typename T>
+	//typename std::enable_if<!is_sqlitefundametion_type<typename std::remove_reference<T>::type>::value, bool>::type is_null_value_for_field(T&& t) {
+	//	return t.empty();
+	//}
 
 	class sqlite final {
 	public:
@@ -110,11 +110,11 @@ namespace xorm {
 
 				if (index < (size - 1)) {
 					ss << "'" << name << "' " << ",";
-					is_null_value_for_field(obj.*field) ? value_place.append("NULL,") : value_place.append("?,");
+					value_place.append("?,");
 				}
 				else if (index == (size - 1)) {
 					ss << "'" << name << "' ";
-					is_null_value_for_field(obj.*field) ? value_place.append("NULL"): value_place.append("?");
+					value_place.append("?");
 				}
 				++index;
 			}
@@ -153,6 +153,9 @@ namespace xorm {
 				 v = sqlite3_column_int(stmt, (int)index);
 				 return 0;
 			}
+			if (v.is_null()) {
+				return sqlite3_bind_null(stmt, (int)index);
+			}
 			return  sqlite3_bind_int(stmt, (int)index, v.value());
 		}
 
@@ -162,6 +165,9 @@ namespace xorm {
 				v = sqlite3_column_double(stmt, (int)index);
 				return 0;
 			}
+			if (v.is_null()) {
+				return sqlite3_bind_null(stmt, (int)index);
+			}
 			return  sqlite3_bind_double(stmt, (int)index, v.value());
 		}
 
@@ -170,6 +176,9 @@ namespace xorm {
 			if (get) {
 				v = sqlite3_column_int64(stmt, (int)index);
 				return 0;
+			}
+			if (v.is_null()) {
+				return sqlite3_bind_null(stmt, (int)index);
 			}
 			return sqlite3_bind_int64(stmt, (int)index, v.value());
 		}
