@@ -191,16 +191,17 @@ int main() {
 		auto data_begin = content.data();
 		tt.binary = sqlite::Blob(data_begin, data_begin + content.size());
 		auto r0 = dao.insert(tt);
-		auto r1 = dao.query<std::tuple<sqlite::Integer>>("select a from test1 where id=?", sqlite::Integer{ 6 });
+		auto r1 = dao.query<std::tuple<sqlite::Integer>>("select a from test1 where id=?", sqlite::Integer{ 1 });
 		auto r11 = dao.query<test1>("");
 		if (!r11.results.empty()) {
 			auto&& first = r11.results[0];
 			std::ofstream output("./readout.jpg", std::ios::binary);
 			output.write((char const*)first.binary.data(), first.binary.size());
 		}
-		auto r12 = dao.query<test1>("where id=?", sqlite::Integer{ 6 });
+		auto r12 = dao.query<test1>("where id=?", sqlite::Integer{ 1 });
 		tt.b = 1024.1024;
 		auto r2 = dao.update(tt);
+		auto r90 = dao.update("update test1 set a=? where id=?", sqlite::Integer{ 100 }, sqlite::Integer{ 1 });
 		auto r3 = dao.del<test1>("");
 #endif //  XORM_ENABLE_SQLITE
 		std::getchar();
