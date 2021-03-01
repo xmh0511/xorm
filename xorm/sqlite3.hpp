@@ -61,6 +61,16 @@ namespace xorm {
 		constexpr static bool value = true;
 	};
 
+	template<typename T>
+	typename std::enable_if<is_sqlitefundametion_type<typename std::remove_reference<T>::type>::value, bool>::type is_null_value_for_field(T&& t) {
+		return t.is_null();
+	}
+
+	template<typename T>
+	typename std::enable_if<!is_sqlitefundametion_type<typename std::remove_reference<T>::type>::value, bool>::type is_null_value_for_field(T&& t) {
+		return t.empty();
+	}
+
 	class sqlite final {
 	public:
 		using Integer = SqliteFundamentionType<int>;
@@ -100,11 +110,11 @@ namespace xorm {
 
 				if (index < (size - 1)) {
 					ss << "'" << name << "' " << ",";
-					(obj.*field).is_null()? value_place.append("NULL,") : value_place.append("?,");
+					is_null_value_for_field(obj.*field) ? value_place.append("NULL,") : value_place.append("?,");
 				}
 				else if (index == (size - 1)) {
 					ss << "'" << name << "' ";
-					(obj.*field).is_null() ? value_place.append("NULL"): value_place.append("?");
+					is_null_value_for_field(obj.*field) ? value_place.append("NULL"): value_place.append("?");
 				}
 				++index;
 			}
