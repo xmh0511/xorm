@@ -1,7 +1,8 @@
 ﻿#include <iostream>
 #include <xorm.hpp>
 using namespace xorm;
-
+#include <fstream>
+#include <sstream>
 #ifdef XORM_ENABLE_MYSQL
 struct test {
 	mysql::Integer id;
@@ -29,8 +30,9 @@ struct test1 {
 	sqlite::Double b;
 	sqlite::Integer id;
 	std::string text;
+	sqlite::Blob binary;
 };
-REFLECTION(test1,a,b,id, text)
+REFLECTION(test1,a,b,id, text, binary)
 #endif 
 
 int main() {
@@ -182,9 +184,20 @@ int main() {
 		tt.b = 10.4;
 		tt.id = 1;
 		tt.text = "abccdd";
+		std::ifstream file("./time.jpg", std::ios::binary);
+		std::stringstream ss;
+		ss << file.rdbuf();
+		auto content = ss.str();
+		auto data_begin = content.data();
+		tt.binary = sqlite::Blob(data_begin, data_begin + content.size());
 		auto r0 = dao.insert(tt);
 		auto r1 = dao.query<std::tuple<sqlite::Integer>>("select a from test1 where id=?", sqlite::Integer{ 6 });
 		auto r11 = dao.query<test1>("");
+		if (!r11.results.empty()) {
+			auto&& first = r11.results[0];
+			std::ofstream output("./readout.jpg", std::ios::binary);
+			output.write((char const*)first.binary.data(), first.binary.size());
+		}
 		auto r12 = dao.query<test1>("where id=?", sqlite::Integer{ 6 });
 		tt.b = 1024.1024;
 		auto r2 = dao.update(tt);
