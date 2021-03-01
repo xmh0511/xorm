@@ -502,6 +502,11 @@ namespace xorm {
 			}
 			return dbresult;
 		}
+	public:
+		sqlite3* get_raw_connetion(bool& state) {
+			state = is_connect_;
+			return sqlite_handler_;
+		}
 	private:
 		bool is_connect_ = false;
 		sqlite3* sqlite_handler_ = nullptr;

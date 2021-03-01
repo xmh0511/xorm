@@ -673,6 +673,10 @@ namespace xorm {
 				error_callback_("db_index: "+ db_index_key_+ " , error: "+ message);
 			}
 		}
+		MYSQL* get_raw_connetion(bool& state) {
+			state = is_connect_;
+			return conn_;
+		}
 	private:
 		MYSQL* conn_ = nullptr;
 		bool is_connect_ = false;

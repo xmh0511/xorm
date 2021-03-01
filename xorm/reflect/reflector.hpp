@@ -169,7 +169,7 @@ struct ClassName##_meta_info \
     } \
     constexpr std::size_t element_size() { return N; } \
 }; \
-auto meta_info_reflect(ClassName const& t)->ClassName##_meta_info \
+static auto meta_info_reflect(ClassName const& t)->ClassName##_meta_info \
 { \
     return ClassName##_meta_info{}; \
 }

@@ -217,6 +217,9 @@ namespace xorm {
 			}
 			return conn_->is_connect();
 		}
+		std::shared_ptr<DataBaseType> const& get_connection() {
+			return conn_;
+		}
 	public:
 		~dao_t() {
 			if (start_transaction_) {
