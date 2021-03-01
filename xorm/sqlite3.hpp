@@ -100,11 +100,11 @@ namespace xorm {
 
 				if (index < (size - 1)) {
 					ss << "'" << name << "' " << ",";
-					value_place.append("?,");
+					(obj.*field).is_null()? value_place.append("NULL,") : value_place.append("?,");
 				}
 				else if (index == (size - 1)) {
 					ss << "'" << name << "' ";
-					value_place.append("?");
+					(obj.*field).is_null() ? value_place.append("NULL"): value_place.append("?");
 				}
 				++index;
 			}
