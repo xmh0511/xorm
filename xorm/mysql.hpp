@@ -645,6 +645,12 @@ namespace xorm {
 		std::size_t get_max_string_size() {
 			return string_max_size_;
 		}
+		void set_max_blob_size(std::size_t size) {
+			blob_max_size_ = size;
+		}
+		std::size_t get_max_blob_size() {
+			return blob_max_size_;
+		}
 	private:
 		db_result<void> stmt_execute(std::string const& sqlStr, MYSQL_BIND* bind) {
 			MYSQL_STMT* pStmt = mysql_stmt_init(conn_);
