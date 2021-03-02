@@ -89,11 +89,12 @@ namespace xorm {
 		}
 		template<typename T, typename U, typename Y>
 		void operator()(T&& obj, U&& name, Y&& field) {
-			this_->clear_field((obj.*field), (copy_v.*field), index_);
+			this_->clear_field((obj.*field), (copy_v.*field), index_, index_blob_);
 		}
 		T0* this_;
 		Object& copy_v;
 		std::size_t index_ = 0;
+		std::size_t index_blob_ = 0;
 	};
 	template<typename T0>
 	struct auto_params_lambda4 {
@@ -116,11 +117,12 @@ namespace xorm {
 		}
 		template<typename T, typename U>
 		void operator()(T& v, U& u) {
-			this_->clear_field(v, u, index_);
+			this_->clear_field(v, u, index_, index_blob_);
 		}
 		MYSQL_BIND* bind;
 		T0* this_;
 		std::size_t index_ = 0;
+		std::size_t index_blob_ = 0;
 	};
 	template<typename T>
 	class stmt_guard {
@@ -172,6 +174,7 @@ namespace xorm {
 		using MysqlDate = TimeDate<MYSQL_TYPE_DATE>;
 		using MysqlDateTime = TimeDate<MYSQL_TYPE_DATETIME>;
 		using MysqlTime = TimeDate<MYSQL_TYPE_TIME>;
+		using Blob = std::vector<char>;
 	private:
 		template<typename T>
 		typename std::enable_if<is_fundamention_type<typename std::remove_reference<T>::type>::value || is_date_type<typename std::remove_reference<T>::type>::value, bool>::type bind_value(T & t, MYSQL_BIND & bind, bool get = false) {
@@ -201,8 +204,26 @@ namespace xorm {
 			return true;
 		}
 
+		template<typename T>  //blob
+		typename std::enable_if<std::is_same<typename std::remove_reference<T>::type, Blob>::value, bool>::type bind_value(T& t, MYSQL_BIND& bind, bool get = false) {
+			if (get) {
+				record_blob_size_.push_back(0);
+				auto& data = record_blob_size_.back();
+				bind.length = &data;
+				t.resize(blob_max_size_);
+			}
+			else {
+				bind.length = nullptr;
+			}
+			bind.buffer_type = MYSQL_TYPE_LONG_BLOB;
+			bind.buffer = t.empty()? nullptr:&(t[0]);
+			bind.is_null = 0;
+			bind.buffer_length = (unsigned long)t.size();
+			return true;
+		}
+
 		template<typename T, typename U>
-		typename std::enable_if<std::is_same<typename std::remove_reference<T>::type, std::string>::value>::type clear_field(T& t, U& v,std::size_t& index) {
+		typename std::enable_if<std::is_same<typename std::remove_reference<T>::type, std::string>::value>::type clear_field(T& t, U& v,std::size_t& index, std::size_t& index_blob) {
 			auto& size = record_string_size_[index];
 			index++;
 			if (size != 0) {
@@ -215,8 +236,23 @@ namespace xorm {
 			//memset(&t[0], 0, t.size()); no use, optimized by record_string_size_
 		}
 
+		template<typename T, typename U>  //blob
+		typename std::enable_if<std::is_same<typename std::remove_reference<T>::type, Blob>::value>::type clear_field(T& t, U& v, std::size_t& index, std::size_t& index_blob) {
+			auto& size = record_blob_size_[index_blob];
+			index_blob++;
+			if (size != 0) {
+				auto begin = &t[0];
+				v = Blob(begin, begin + size);
+			}
+			else {
+				v = Blob();
+			}
+			size = 0;
+			//memset(&t[0], 0, t.size()); no use, optimized by record_string_size_
+		}
+
 		template<typename T, typename U>
-		typename std::enable_if<!std::is_same<typename std::remove_reference<T>::type, std::string>::value>::type clear_field(T& t, U& v, std::size_t& index) {
+		typename std::enable_if<!std::is_same<typename std::remove_reference<T>::type, std::string>::value && !std::is_same<typename std::remove_reference<T>::type, Blob>::value>::type clear_field(T& t, U& v, std::size_t& index, std::size_t& index_blob) {
 			v = t;
 			t.clear();
 		}
@@ -408,7 +444,9 @@ namespace xorm {
 			MYSQL_STMT* pStmt = mysql_stmt_init(conn_);
 			stmt_guard<MYSQL_STMT> guard(pStmt);
 			string_size_vec_clear string_guard{ record_string_size_ };
+			string_size_vec_clear blob_guard{ record_blob_size_ };
 			record_string_size_.reserve(meta.element_size()*2);
+			record_blob_size_.reserve(meta.element_size() * 2);
 			db_result<T> dbresult;
 			if (pStmt != nullptr) {
 				auto sqlStr = ss.str();
@@ -483,7 +521,9 @@ namespace xorm {
 			MYSQL_STMT* pStmt = mysql_stmt_init(conn_);
 			stmt_guard<MYSQL_STMT> guard(pStmt);
 			string_size_vec_clear string_guard{ record_string_size_ };
+			string_size_vec_clear blob_guard{ record_blob_size_ };
 			record_string_size_.reserve(tuple_size*2);
+			record_blob_size_.reserve(tuple_size*2);
 			db_result<T> dbresult;
 			if (pStmt != nullptr) {
 				int iRet = mysql_stmt_prepare(pStmt, sqlStr.c_str(), (unsigned long)sqlStr.size());
@@ -681,8 +721,10 @@ namespace xorm {
 		MYSQL* conn_ = nullptr;
 		bool is_connect_ = false;
 		std::size_t string_max_size_ = 1024 * 1024;
+		std::size_t blob_max_size_ = 3* 1024 * 1024;
 		std::function<void(std::string const&)> error_callback_;
 		std::vector<unsigned long> record_string_size_;
+		std::vector<unsigned long> record_blob_size_;
 		std::string db_index_key_;
 	};
 }
