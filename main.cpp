@@ -221,6 +221,7 @@ int main() {
 		});
 		dao_t<sqlite>::init_conn_pool(config);
 		dao_t<sqlite> dao{ "xorm" };
+		auto rs0 = dao.query<test1>("");
 		auto r = dao.query<test1>("");
 		test1 tt;
 		tt.a = 56;
@@ -245,6 +246,7 @@ int main() {
 		tt.b = 1024.1024;
 		auto r2 = dao.update(tt);
 		auto r90 = dao.update("update test1 set a=? where id=?", sqlite::Integer{ 100 }, sqlite::Integer{ 1 });
+		auto rs = dao.query<std::tuple<sqlite::Integer>>("select id from test1 where text=?", std::string("abccdd"));
 		auto r3 = dao.del<test1>("");
 #endif //  XORM_ENABLE_SQLITE
 		std::getchar();

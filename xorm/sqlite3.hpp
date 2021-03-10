@@ -412,7 +412,8 @@ namespace xorm {
 			stmt_guard<sqlite3_stmt> guard{ stmt };
 			db_result<void> dbresult;
 			if (r == SQLITE_OK) {
-				auto result = bind_params_without_obj(stmt, std::make_tuple(params...), xorm_utils::make_index_package<sizeof...(params)>{});
+				auto params_tuple = std::make_tuple(params...);
+				auto result = bind_params_without_obj(stmt, params_tuple, xorm_utils::make_index_package<sizeof...(params)>{});
 				if (result == SQLITE_OK) {
 					result = sqlite3_step(stmt);
 					if (result == SQLITE_DONE) {
@@ -466,7 +467,8 @@ namespace xorm {
 			stmt_guard<sqlite3_stmt> guard{ stmt };
 			db_result<T> dbresult;
 			if (r == SQLITE_OK) {
-				auto result = bind_params_without_obj(stmt, std::make_tuple(params...), xorm_utils::make_index_package<sizeof...(params)>{});
+				auto params_tuple = std::make_tuple(params...);
+				auto result = bind_params_without_obj(stmt, params_tuple, xorm_utils::make_index_package<sizeof...(params)>{});
 				if (result == SQLITE_OK) {
 					while (sqlite3_step(stmt)== SQLITE_ROW) {
 						T tmp{};
@@ -504,7 +506,8 @@ namespace xorm {
 			stmt_guard<sqlite3_stmt> guard{ stmt };
 			db_result<T> dbresult;
 			if (r == SQLITE_OK) {
-				auto result = bind_params_without_obj(stmt, std::make_tuple(params...), xorm_utils::make_index_package<sizeof...(params)>{});
+				auto params_tuple = std::make_tuple(params...);
+				auto result = bind_params_without_obj(stmt, params_tuple, xorm_utils::make_index_package<sizeof...(params)>{});
 				if (result == SQLITE_OK) {
 					while (sqlite3_step(stmt) == SQLITE_ROW) {
 						T tmp{};
