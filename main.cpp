@@ -164,8 +164,7 @@ int main() {
 
 	//dao_t<mysql> dao_query2{ "xorm2" };
 	//auto xorm2r = dao_query2.query<default_tb>(" where id=?", mysql::Integer{ 1 });
-	//bool state = false;
-	//dao_query2.get_connection()->get_raw_connetion(state);
+	//dao_query2.get_connection()->get_raw_connetion();
 
      dao_t<mysql> dao{ "xorm" };
 	 test tb_info;
