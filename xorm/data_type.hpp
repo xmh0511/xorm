@@ -37,7 +37,7 @@ namespace xorm {
 		bool is_null() const {
 			return is_null_;
 		}
-		my_bool* null_buffer() {
+		char* null_buffer() {
 			return &is_null_;
 		}
 		char* buffer() {
@@ -54,7 +54,7 @@ namespace xorm {
 		static const enum_field_types field_type = FieldType;
 	private:
 		Type data_;
-		my_bool is_null_;
+		char is_null_;
 	};
 
 	template<typename T>
@@ -107,7 +107,7 @@ namespace xorm {
 		bool is_null() const {
 			return is_null_;
 		}
-		my_bool* null_buffer() {
+		char* null_buffer() {
 			return &is_null_;
 		}
 		char* buffer() {
@@ -211,7 +211,7 @@ namespace xorm {
 			return ss.str();
 		}
 	private:
-		my_bool is_null_;
+		char is_null_;
 		MYSQL_TIME data_;
 	};
 
