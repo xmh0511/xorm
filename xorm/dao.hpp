@@ -108,6 +108,7 @@ namespace xorm {
 
 		}
 		dao_t(dao_t const&) = delete;
+		dao_t& operator=(dao_t const&) = delete;
 	public:
 		/*return type   
 		  first:effective row number
