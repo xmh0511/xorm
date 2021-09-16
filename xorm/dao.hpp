@@ -66,7 +66,7 @@ namespace xorm {
 	}
 
 	template<typename DataBaseType>
-	class dao_t {
+	class dao_t final{
 	public:
 		static void init_conn_pool(dataBaseConfig const& config) {
 			auto data_base_ptr = std::shared_ptr<data_base>(new data_base{});
@@ -107,6 +107,7 @@ namespace xorm {
 			}
 
 		}
+		dao_t(dao_t const&) = delete;
 	public:
 		/*return type   
 		  first:effective row number
