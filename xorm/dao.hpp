@@ -5,6 +5,7 @@
 #include <utility>
 #include <functional>
 #include <map>
+#include <unordered_map>
 #include "reflect/reflector.hpp"
 #include "db_utils.hpp"
 #include "dbconfig.hpp"
